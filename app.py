@@ -1,8 +1,10 @@
-from examples import bfv_example_1
+from examples import bfv_example_1, bfv_example_2
+
 
 def main():
-
-    bfv_example_1()
+    # bfv_example_1()
+    # bfv_example_2()
+    bfv_example_3()
 
 
 if __name__ == '__main__':

@@ -58,8 +58,10 @@ RUN make -j8
 
 WORKDIR /app
 ADD examples.py /app
+ADD utils.py /app
 ADD app.py /app
 ADD setup.py /app
+
 ADD CythonWrapper/. /app/CythonWrapper
 
 # cython_src setup

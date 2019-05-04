@@ -89,10 +89,9 @@ namespace wrapper {
         this->context = SEALContext::Create(*parms);
 
         // Creating keys
-        KeyGenerator keygen(context);
-        auto public_key = keygen.public_key();
-        auto secret_key = keygen.secret_key();
-        auto relin_keys = keygen.relin_keys(DefaultParams::dbc_max());
+        this->keygen = new KeyGenerator(context);
+        auto public_key = this->keygen->public_key();
+        auto secret_key = this->keygen->secret_key();
 
         // Creating encryptor, evaluator, decryptor
         this->encryptor = new Encryptor(this->context, public_key);
@@ -172,28 +171,31 @@ namespace wrapper {
     }
 
     void Wrapper::clear_plaintext(string plaintext_name) {
-        auto search_result = this->plaintext_map.find(plaintext_name);
-        if (search_result != plaintext_map.end()) {
-            this->ciphertext_map.erase(plaintext_name);
-        } else {
-            throw std::invalid_argument("Could not erase plaintext because it is not found");
-        }
+        check_plaintext_name_exist(plaintext_name);
+        this->ciphertext_map.erase(plaintext_name);
     }
 
     void Wrapper::clear_ciphertext(string ciphertext_name){
-        auto search_result = this->ciphertext_map.find(ciphertext_name);
-        if (search_result != ciphertext_map.end()) {
-            this->ciphertext_map.erase(ciphertext_name);
-        } else {
-            throw std::invalid_argument("Could not erase ciphertext because it is not found");
-        }
+        check_ciphertext_name_exist(ciphertext_name);
+        this->ciphertext_map.erase(ciphertext_name);
     }
 
-    // encoding
+    // plaintext
     string Wrapper::plaintext_to_string(string plaintext_name) {
-        Plaintext plaintext = get_plaintext(plaintext_name);
-        string plaintext_string = plaintext.to_string();
-        return plaintext_string;
+        return get_plaintext(plaintext_name).to_string();
+
+    }
+
+    string Wrapper::plaintext_create(string expression, string plaintext_name) {
+        check_plaintext_name_not_exist(plaintext_name);
+        plaintext_map[plaintext_name] = Plaintext(expression);
+        return plaintext_name;
+    }
+
+    // ciphertext
+    int Wrapper::ciphertext_size(string ciphertext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        return get_ciphertext(ciphertext_name).size();
     }
 
     // integer encoder
@@ -203,13 +205,13 @@ namespace wrapper {
     }
 
     string Wrapper::integer_encoder(int integer, string plaintext_name) {
+        check_plaintext_name_not_exist(plaintext_name);
         this->plaintext_map[plaintext_name] = this->integerEncoder->encode(integer);
         return plaintext_name;
     }
 
     int64_t Wrapper::integer_decoder(string plaintext_name) {
-        Plaintext plaintext = get_plaintext(plaintext_name);
-        return this->integerEncoder->decode_int64(plaintext);
+        return this->integerEncoder->decode_int64(get_plaintext(plaintext_name));
     }
 
     // encrypt & decrypt
@@ -220,42 +222,118 @@ namespace wrapper {
 
     string Wrapper::encryptor_encrypt(string plaintext_name, string ciphertext_name) {
         Plaintext plaintext = get_plaintext(plaintext_name);
+        check_ciphertext_name_not_exist(ciphertext_name);
         this->encryptor->encrypt(plaintext, this->ciphertext_map[ciphertext_name]);
         return ciphertext_name;
     }
 
     string Wrapper::decryptor_decrypt(string ciphertext_name, string plaintext_name) {
         Ciphertext ciphertext = get_ciphertext(ciphertext_name);
-        Plaintext plaintext;
-        this->decryptor->decrypt(ciphertext, plaintext);
-        this->plaintext_map[plaintext_name] = plaintext;
+        check_plaintext_name_not_exist(plaintext_name);
+        this->decryptor->decrypt(ciphertext, this->plaintext_map[plaintext_name]);
         return plaintext_name;
     }
 
     // evaluator
+    void Wrapper::evaluator_relinearize_inplace(string ciphertext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        this->evaluator->relinearize_inplace(get_ciphertext(ciphertext_name), this->relinearize_key);
+    }
+
+    void Wrapper::evaluator_negate_inplace(string ciphertext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        this->evaluator->negate_inplace(get_ciphertext(ciphertext_name));
+    }
+
     void Wrapper::evaluator_add_inplace(string ciphertext_name1, string ciphertext_name2) {
+        check_ciphertext_name_exist(ciphertext_name1);
+        check_ciphertext_name_exist(ciphertext_name2);
         this->evaluator->add_inplace(
             get_ciphertext(ciphertext_name1),
             get_ciphertext(ciphertext_name2));
     }
 
+    void Wrapper::evaluator_multiply_inplace(string ciphertext_name1, string ciphertext_name2) {
+        check_ciphertext_name_exist(ciphertext_name1);
+        check_ciphertext_name_exist(ciphertext_name2);
+        this->evaluator->multiply_inplace(
+            get_ciphertext(ciphertext_name1),
+            get_ciphertext(ciphertext_name2));
+    }
+
+    void Wrapper::evaluator_square_inplace(string ciphertext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        this->evaluator->square_inplace(
+            get_ciphertext(ciphertext_name));
+    }
+
+    // relinearization
+    void Wrapper::relinearization_generate_keys(int decomposition_bit_count, size_t count) {
+        /*
+        Relinearization can reduce the size of ciphertexts back to initial size (2).
+        Large decomposition bit count -> fast relinearization -> more noise budget consumption
+        Small decomposition bit count -> slow relinearization -> less noise budget consumption
+
+        Reducing a ciphertext of size M >= 2 back to size 2 will need M-2 relinearization keys
+        */
+        this->relinearize_key = this->keygen->relin_keys(decomposition_bit_count, count);
+    }
+
+    int Wrapper::relinearization_dbc_max() {
+        // Roughly 60
+        return DefaultParams::dbc_max();
+    }
+
+    int Wrapper::relinearization_dbc_min() {
+        // Roughly 1
+        return DefaultParams::dbc_min();
+    }
+
     /* Private Methods */
-    Plaintext& Wrapper::get_plaintext(string plaintext_name) {
+    void Wrapper::check_plaintext_name_exist(string plaintext_name) {
         auto search_result = this->plaintext_map.find(plaintext_name);
-        if (search_result != plaintext_map.end()) {
-            return plaintext_map[plaintext_name];
-        } else {
-            throw std::invalid_argument("Could not find plaintext in map");
+        if (search_result == this->plaintext_map.end()) {
+            std::stringstream msg;
+            msg << "Plaintext name '" << plaintext_name << "' does not exist";
+            throw std::invalid_argument(msg.str());
         }
     }
 
-    Ciphertext& Wrapper::get_ciphertext(string ciphertext_name) {
+    void Wrapper::check_ciphertext_name_exist(string ciphertext_name){
         auto search_result = this->ciphertext_map.find(ciphertext_name);
-        if (search_result != ciphertext_map.end()) {
-            return this->ciphertext_map[ciphertext_name];
-        } else {
-            throw std::invalid_argument("Could not find ciphertext in map");
+        if (search_result == this->ciphertext_map.end()) {
+            std::stringstream msg;
+            msg << "Ciphertext name '" << ciphertext_name << "' does not exist";
+            throw std::invalid_argument(msg.str());
         }
+    }
+
+    void Wrapper::check_plaintext_name_not_exist(string plaintext_name){
+        auto search_result = this->plaintext_map.find(plaintext_name);
+        if (search_result != this->plaintext_map.end()) {
+            std::stringstream msg;
+            msg << "Plaintext name '" << plaintext_name << "' already exists";
+            throw std::invalid_argument(msg.str());
+        }
+    }
+
+    void Wrapper::check_ciphertext_name_not_exist(string ciphertext_name){
+        auto search_result = this->ciphertext_map.find(ciphertext_name);
+        if (search_result != this->ciphertext_map.end()) {
+            std::stringstream msg;
+            msg << "Ciphertext name '" << ciphertext_name << "' already exists";
+            throw std::invalid_argument(msg.str());
+        }
+    }
+
+    Plaintext& Wrapper::get_plaintext(string plaintext_name) {
+        check_plaintext_name_exist(plaintext_name);
+        return plaintext_map[plaintext_name];
+    }
+
+    Ciphertext& Wrapper::get_ciphertext(string ciphertext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        return this->ciphertext_map[ciphertext_name];
     }
 }
 

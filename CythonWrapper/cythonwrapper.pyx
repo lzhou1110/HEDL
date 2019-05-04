@@ -31,9 +31,16 @@ cdef class CythonWrapper:
     def clear_ciphertext(self, string ciphertext_name):
         self.wrapper.clear_ciphertext(ciphertext_name)
 
-    # encoding
+    # plaintext
     def plaintext_to_string(self, string plaintext_name):
         return self.wrapper.plaintext_to_string(plaintext_name)
+
+    def plaintext_create(self, string expression, string plaintext_name):
+        return self.wrapper.plaintext_create(expression, plaintext_name)
+
+    # ciphertext
+    def ciphertext_size(self, string ciphertext_name):
+        return self.wrapper.ciphertext_size(ciphertext_name)
 
     # integer encoder
     def init_integer_encoder(self):
@@ -56,5 +63,27 @@ cdef class CythonWrapper:
         return self.wrapper.decryptor_decrypt(ciphertext_name, plaintext_name)
 
     # evaluator
+    def evaluator_relinearize_inplace(self, string ciphertext_name):
+        self.wrapper.evaluator_relinearize_inplace(ciphertext_name)
+
+    def evaluator_negate_inplace(self, string ciphertext_name):
+        self.wrapper.evaluator_negate_inplace(ciphertext_name)
+
     def evaluator_add_inplace(self, string ciphertext_name1, string ciphertext_name2):
         self.wrapper.evaluator_add_inplace(ciphertext_name1, ciphertext_name2)
+
+    def evaluator_multiply_inplace(self, string ciphertext_name1, string ciphertext_name2):
+        self.wrapper.evaluator_multiply_inplace(ciphertext_name1, ciphertext_name2)
+
+    def evaluator_square_inplace(self, string ciphertext_name):
+        self.wrapper.evaluator_square_inplace(ciphertext_name)
+
+    # relinearization
+    def relinearization_generate_keys(self, int decomposition_bit_count, int count):
+        self.wrapper.relinearization_generate_keys(decomposition_bit_count, count)
+
+    def relinearization_dbc_max(self):
+        return self.wrapper.relinearization_dbc_max()
+
+    def relinearization_dbc_min(self):
+        return self.wrapper.relinearization_dbc_min()
