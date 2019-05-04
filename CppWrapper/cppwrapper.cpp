@@ -20,8 +20,8 @@ using namespace std;
 using namespace seal;
 
 namespace wrapper {
-    Wrapper::Wrapper () {}
 
+    /* Constructor & Destructor */
     /*
     Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (bits)
 
@@ -50,8 +50,16 @@ namespace wrapper {
     - noise_standard_deviation (default to 3.20, should not be necessary to modify unless there are specific reasons)
     - random_generator
     */
-    Wrapper::Wrapper(string scheme,
-    int security_level, int poly_modulus_degree, int coeff_modulus, int plain_modulus) {
+
+    Wrapper::Wrapper () {}
+
+    Wrapper::Wrapper(
+        string scheme,
+        int security_level,
+        int poly_modulus_degree,
+        int coeff_modulus,
+        int plain_modulus
+    ) {
         EncryptionParameters*parms;
         // Construct the corresponding encryption parameters based on scheme
         if (scheme == "BFV") {
@@ -95,10 +103,8 @@ namespace wrapper {
 
     Wrapper::~Wrapper () {}
 
-    void Wrapper::clear_all_stored_pointers() {
-        this->plaintext_map.clear();
-    }
-
+    /* Methods */
+    // logging
     void Wrapper::print_seal_version() {
         #ifdef SEAL_VERSION
         cout << "Microsoft SEAL version: " << SEAL_VERSION << endl;
@@ -159,39 +165,97 @@ namespace wrapper {
         << (MemoryManager::GetPool().alloc_byte_count() >> 20) << " MB" << endl;
     }
 
-    string Wrapper::plaintext_to_string(uintptr_t plaintext_pointer) {
-        Plaintext plaintext = get_plaintext(plaintext_pointer);
-        cout << plaintext.to_string() <<endl;
+    // pointers management
+    void Wrapper::clear_all_stored_pointers() {
+        this->plaintext_map.clear();
+        this->ciphertext_map.clear();
+    }
+
+    void Wrapper::clear_plaintext(string plaintext_name) {
+        auto search_result = this->plaintext_map.find(plaintext_name);
+        if (search_result != plaintext_map.end()) {
+            this->ciphertext_map.erase(plaintext_name);
+        } else {
+            throw std::invalid_argument("Could not erase plaintext because it is not found");
+        }
+    }
+
+    void Wrapper::clear_ciphertext(string ciphertext_name){
+        auto search_result = this->ciphertext_map.find(ciphertext_name);
+        if (search_result != ciphertext_map.end()) {
+            this->ciphertext_map.erase(ciphertext_name);
+        } else {
+            throw std::invalid_argument("Could not erase ciphertext because it is not found");
+        }
+    }
+
+    // encoding
+    string Wrapper::plaintext_to_string(string plaintext_name) {
+        Plaintext plaintext = get_plaintext(plaintext_name);
         string plaintext_string = plaintext.to_string();
         return plaintext_string;
     }
 
+    // integer encoder
     void Wrapper::init_integer_encoder() {
+        cout << "Initialising integer encoder" << endl;
         this->integerEncoder = new IntegerEncoder(this->context);
     }
 
-    uintptr_t Wrapper::integer_encoder(int integer) {
-        Plaintext plaintext = this->integerEncoder->encode(integer);
-        uintptr_t plaintext_pointer = reinterpret_cast<std::uintptr_t>(&plaintext);
-        this->plaintext_map[plaintext_pointer] = &plaintext;
-//        cout << plaintext.to_string() << endl;
-        return plaintext_pointer;
+    string Wrapper::integer_encoder(int integer, string plaintext_name) {
+        this->plaintext_map[plaintext_name] = this->integerEncoder->encode(integer);
+        return plaintext_name;
     }
 
-    int64_t Wrapper::integer_decoder(uintptr_t plaintext_pointer) {
-        Plaintext plaintext = get_plaintext(plaintext_pointer);
+    int64_t Wrapper::integer_decoder(string plaintext_name) {
+        Plaintext plaintext = get_plaintext(plaintext_name);
         return this->integerEncoder->decode_int64(plaintext);
     }
 
-    // Private methods
-    Plaintext Wrapper::get_plaintext(uintptr_t plaintext_pointer) {
-        Plaintext* c_plaintext_pointer = this->plaintext_map[plaintext_pointer];
-        return *(c_plaintext_pointer);
+    // encrypt & decrypt
+    int Wrapper::decryptor_invariant_noise_budget(string ciphertext_name) {
+        Ciphertext ciphertext = get_ciphertext(ciphertext_name);
+        return this->decryptor->invariant_noise_budget(ciphertext);
     }
 
-    Ciphertext Wrapper::get_ciphertext(uintptr_t ciphertext_pointer) {
-        Ciphertext* c_ciphertext_pointer = reinterpret_cast<Ciphertext*>(ciphertext_pointer);
-        return (*c_ciphertext_pointer);
+    string Wrapper::encryptor_encrypt(string plaintext_name, string ciphertext_name) {
+        Plaintext plaintext = get_plaintext(plaintext_name);
+        this->encryptor->encrypt(plaintext, this->ciphertext_map[ciphertext_name]);
+        return ciphertext_name;
+    }
+
+    string Wrapper::decryptor_decrypt(string ciphertext_name, string plaintext_name) {
+        Ciphertext ciphertext = get_ciphertext(ciphertext_name);
+        Plaintext plaintext;
+        this->decryptor->decrypt(ciphertext, plaintext);
+        this->plaintext_map[plaintext_name] = plaintext;
+        return plaintext_name;
+    }
+
+    // evaluator
+    void Wrapper::evaluator_add_inplace(string ciphertext_name1, string ciphertext_name2) {
+        this->evaluator->add_inplace(
+            get_ciphertext(ciphertext_name1),
+            get_ciphertext(ciphertext_name2));
+    }
+
+    /* Private Methods */
+    Plaintext& Wrapper::get_plaintext(string plaintext_name) {
+        auto search_result = this->plaintext_map.find(plaintext_name);
+        if (search_result != plaintext_map.end()) {
+            return plaintext_map[plaintext_name];
+        } else {
+            throw std::invalid_argument("Could not find plaintext in map");
+        }
+    }
+
+    Ciphertext& Wrapper::get_ciphertext(string ciphertext_name) {
+        auto search_result = this->ciphertext_map.find(ciphertext_name);
+        if (search_result != ciphertext_map.end()) {
+            return this->ciphertext_map[ciphertext_name];
+        } else {
+            throw std::invalid_argument("Could not find ciphertext in map");
+        }
     }
 }
 

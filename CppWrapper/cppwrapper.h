@@ -9,41 +9,52 @@ using namespace seal;
 namespace wrapper {
     class Wrapper {
         public:
-            // constructor & destructor
+            /* Constructor & Destructor */
             Wrapper();
-            Wrapper(string scheme, int security_level, int poly_modulus_degree, int coeff_modulus, int plain_modulus);
+            Wrapper(
+                string scheme,
+                int security_level,
+                int poly_modulus_degree,
+                int coeff_modulus,
+                int plain_modulus
+            );
             ~Wrapper();
 
-            // methods
-            void clear_all_stored_pointers();
+            /* Methods */
+            // logging
             void print_seal_version();
             void print_parameters();
             void print_allocated_memory();
-            string plaintext_to_string(uintptr_t plaintext_pointer);
-
+            // pointers management
+            void clear_all_stored_pointers();
+            void clear_plaintext(string plaintext_name);
+            void clear_ciphertext(string ciphertext_name);
+            // encoding
+            string plaintext_to_string(string plaintext_name);
             // integer encoder
             void init_integer_encoder();
-            uintptr_t integer_encoder(int integer);
-            int64_t integer_decoder(uintptr_t plaintext_pointer);
-
-
-//            void encode(double value)
-//            void encrypt(Plaintext plain)
-//            void decode(Ciphertext cipher)
-
+            string integer_encoder(int integer, string plaintext_name);
+            int64_t integer_decoder(string plaintext_pointer);
+            // encrypt & decrypt
+            int decryptor_invariant_noise_budget(string ciphertext_name);
+            string encryptor_encrypt(string plaintext_name, string ciphertext_name);
+            string decryptor_decrypt(string ciphertext_name, string plaintext_name);
+            // evaluator
+            void evaluator_add_inplace(string ciphertext_name1, string ciphertext_name2);
 
         private:
-            // members
-            map<uintptr_t, Plaintext*> plaintext_map;
+            /* Members */
+            map<string, Plaintext> plaintext_map;
+            map<string, Ciphertext> ciphertext_map;
             shared_ptr<SEALContext> context;
             IntegerEncoder*integerEncoder;
             Encryptor*encryptor;
             Evaluator*evaluator;
             Decryptor*decryptor;
 
-            // methods
-            Plaintext get_plaintext(uintptr_t plaintext_pointer);
-            Ciphertext get_ciphertext(uintptr_t plaintext_pointer);
+             /* Methods */
+            Plaintext& get_plaintext(string plaintext_name);
+            Ciphertext& get_ciphertext(string ciphertext_name);
     };
 }
 
