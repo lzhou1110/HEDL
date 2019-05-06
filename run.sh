@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-docker build -t hemomorphic_cython .
-docker run hemomorphic_cython
+docker build -t homomorphic_cython .
+docker run homomorphic_cython

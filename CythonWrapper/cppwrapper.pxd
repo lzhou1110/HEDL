@@ -1,7 +1,8 @@
 from libcpp.string cimport string
 from libc.stdint cimport int64_t
-from libc.stdint cimport uintptr_t
+from libc.stdint cimport uint64_t
 from libcpp cimport bool
+from libcpp.vector cimport vector
 
 cdef extern from "cppwrapper.cpp":
     pass
@@ -38,6 +39,8 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
 
         # batch encoder
         void init_batch_encoder() except +
+        string batch_encoder(vector[uint64_t] pod_matrix, string plaintext_name) except +
+        vector[uint64_t] batch_decoder(string plaintext_name) except +
 
         # encrypt & decrypt
         int decryptor_invariant_noise_budget(string ciphertext_name) except +
@@ -50,6 +53,9 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
         void evaluator_add_inplace(string ciphertext_name1, string ciphertext_name2) except +
         void evaluator_multiply_inplace(string ciphertext_name1, string ciphertext_name2) except +
         void evaluator_square_inplace(string ciphertext_name) except +
+        void evaluator_add_plain_inplace(string ciphertext_name, string plaintext_name) except +
+        void evaluator_rotate_rows_inplace(string ciphertext_name, int steps) except +
+        void evaluator_rotate_columns_inplace(string ciphertext_name) except +
 
         # relinearization
         void relinearization_generate_keys(int decomposition_bit_count, size_t count) except +

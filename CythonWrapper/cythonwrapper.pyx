@@ -1,6 +1,7 @@
 # distutils: language = c++
 from libcpp.string cimport string
-from libc.stdint cimport uintptr_t
+from libcpp.vector cimport vector
+from libc.stdint cimport uint64_t
 from cppwrapper cimport Wrapper
 
 
@@ -56,6 +57,12 @@ cdef class CythonWrapper:
     def init_batch_encoder(self):
         self.wrapper.init_batch_encoder()
 
+    def batch_encoder(self, vector[uint64_t] pod_matrix, string plaintext_name):
+        return self.wrapper.batch_encoder(pod_matrix, plaintext_name)
+
+    def batch_decoder(self, string plaintext_name):
+        return self.wrapper.batch_decoder(plaintext_name)
+
     # encrypt & decrypt
     def decryptor_invariant_noise_budget(self, string ciphertext_name):
         return self.wrapper.decryptor_invariant_noise_budget(ciphertext_name)
@@ -81,6 +88,15 @@ cdef class CythonWrapper:
 
     def evaluator_square_inplace(self, string ciphertext_name):
         self.wrapper.evaluator_square_inplace(ciphertext_name)
+
+    def evaluator_add_plain_inplace(self, string ciphertext_name, string plaintext_name):
+        self.wrapper.evaluator_add_plain_inplace(ciphertext_name, plaintext_name)
+
+    def evaluator_rotate_rows_inplace(self, string ciphertext_name, int steps):
+        self.wrapper.evaluator_rotate_rows_inplace(ciphertext_name, steps)
+
+    def evaluator_rotate_columns_inplace(self, string ciphertext_name):
+        self.wrapper.evaluator_rotate_columns_inplace(ciphertext_name)
 
     # relinearization
     def relinearization_generate_keys(self, int decomposition_bit_count, int count):

@@ -141,6 +141,7 @@ def bfv_example_2():
 
 def bfv_example_3():
     print("===========Example: BFV Basics III===========")
+    np.set_printoptions(precision=2)
     scheme = bstr("BFV")
     security_level = 128
     poly_modulus_degree = 4096
@@ -151,10 +152,58 @@ def bfv_example_3():
     wrapper.print_seal_version()
     wrapper.print_allocated_memory()
     wrapper.print_parameters()
-
-    print("Is batching enabled? {}".format(wrapper.batching_is_enabled()))
+    print(f"Is batching enabled? {wrapper.batching_is_enabled()}")
     wrapper.batching_generate_galois_keys(30)
-
+    wrapper.relinearization_generate_keys(30, 1)
     wrapper.init_batch_encoder()
+    python_pod_matrix1 = np.zeros((2, 2048), dtype=np.uint64)
+    python_pod_matrix1[0, 1] = 1
+    python_pod_matrix1[0, 2] = 2
+    python_pod_matrix1[0, 3] = 3
+    python_pod_matrix1[1, 0] = 4
+    python_pod_matrix1[1, 1] = 5
+    python_pod_matrix1[1, 2] = 6
+    python_pod_matrix1[1, 3] = 7
+    print(f"First input matrix:\n{python_pod_matrix1}")
+    python_pod_matrix2 = np.ones((2, 2048), dtype=np.uint64)
+    for i in range(2):
+        for j in range(2048):
+            if j % 2 == 1:
+                python_pod_matrix2[i,j] = 2
+    print(f"Second input matrix:\n{python_pod_matrix2}")
+    # Experiment 1, batching a vector
+    plaintext1 = wrapper.batch_encoder(python_pod_matrix1.flatten(), bstr('plaintext1'))
+    ciphertext1 = wrapper.encryptor_encrypt(plaintext1, bstr('ciphertext1'))
+    plaintext2 = wrapper.batch_encoder(python_pod_matrix2.flatten(), bstr('plaintext2'))
+    wrapper.evaluator_add_plain_inplace(ciphertext1, plaintext2)
+    wrapper.evaluator_square_inplace(ciphertext1)
+    wrapper.evaluator_relinearize_inplace(ciphertext1)
+    print(f"Noise budget in result: {wrapper.decryptor_invariant_noise_budget(ciphertext1)} bits")
+    result_plaintext = wrapper.decryptor_decrypt(ciphertext1, bstr('result_plaintext'))
+    result = np.array(wrapper.batch_decoder(result_plaintext)).reshape(2, 2048)
+    print(f"Result matrix:\n{result}")
+    wrapper.clear_all_stored_pointers()
+    # Experiment 2, matrix rotation
+    plaintext1 = wrapper.batch_encoder(python_pod_matrix1.flatten(), bstr('plaintext1'))
+    ciphertext1 = wrapper.encryptor_encrypt(plaintext1, bstr('ciphertext1'))
+    print(f"Noise budget in fresh encryption: {wrapper.decryptor_invariant_noise_budget(ciphertext1)}")
+
+    wrapper.evaluator_rotate_rows_inplace(ciphertext1, 3)
+    plaintext_row_rotate_3 = wrapper.decryptor_decrypt(ciphertext1, bstr("plaintext_row_rotate_3"))
+    matrix_row_rotate_3 = np.array(wrapper.batch_decoder(plaintext_row_rotate_3)).reshape(2, 2048)
+    print(f"Rotated matrix 3 steps to left:\n{matrix_row_rotate_3}")
+    print(f"Noise budget after rotation: {wrapper.decryptor_invariant_noise_budget(ciphertext1)} bits")
+
+    wrapper.evaluator_rotate_columns_inplace(ciphertext1)
+    plaintext_col_rotate = wrapper.decryptor_decrypt(ciphertext1, bstr("plaintext_col_rotate"))
+    matrix_col_rotate = np.array(wrapper.batch_decoder(plaintext_col_rotate)).reshape(2, 2048)
+    print(f"Rotated matrix col:\n{matrix_col_rotate}")
+    print(f"Noise budget after rotation: {wrapper.decryptor_invariant_noise_budget(ciphertext1)} bits")
+
+    wrapper.evaluator_rotate_rows_inplace(ciphertext1, -4)
+    plaintext_row_rotate_n4 = wrapper.decryptor_decrypt(ciphertext1, bstr("plaintext_row_rotate_n4"))
+    matrix_row_rotate_n4 = np.array(wrapper.batch_decoder(plaintext_row_rotate_n4)).reshape(2, 2048)
+    print(f"Rotated matrix 4 steps to right:\n{matrix_row_rotate_n4}")
+    print(f"Noise budget after rotation: {wrapper.decryptor_invariant_noise_budget(ciphertext1)} bits")
 
 

@@ -37,9 +37,11 @@ namespace wrapper {
             // integer encoder
             void init_integer_encoder();
             string integer_encoder(int integer, string plaintext_name);
-            int64_t integer_decoder(string plaintext_pointer);
+            int64_t integer_decoder(string plaintext_name);
             // batch encoder
             void init_batch_encoder();
+            string batch_encoder(vector<uint64_t> pod_matrix, string plaintext_name);
+            vector<uint64_t> batch_decoder(string plaintext_name);
             // encrypt & decrypt
             int decryptor_invariant_noise_budget(string ciphertext_name);
             string encryptor_encrypt(string plaintext_name, string ciphertext_name);
@@ -50,6 +52,9 @@ namespace wrapper {
             void evaluator_add_inplace(string ciphertext_name1, string ciphertext_name2);
             void evaluator_multiply_inplace(string ciphertext_name1, string ciphertext_name2);
             void evaluator_square_inplace(string ciphertext_name);
+            void evaluator_add_plain_inplace(string ciphertext_name, string plaintext_name);
+            void evaluator_rotate_rows_inplace(string ciphertext_name, int steps);
+            void evaluator_rotate_columns_inplace(string ciphertext_name);
             // relinearization
             void relinearization_generate_keys(int decomposition_bit_count, size_t count);
             int relinearization_dbc_max();
@@ -71,6 +76,8 @@ namespace wrapper {
             KeyGenerator*keygen;
             RelinKeys relinearize_keys;
             GaloisKeys galois_keys;
+            size_t batching_slot_count;
+            size_t batching_row_count;
 
             /* Methods */
             void check_plaintext_name_exist(string plaintext_name);
@@ -79,6 +86,7 @@ namespace wrapper {
             void check_ciphertext_name_not_exist(string ciphertext_name);
             Plaintext& get_plaintext(string plaintext_name);
             Ciphertext& get_ciphertext(string ciphertext_name);
+            void print_matrix(vector<uint64_t> pod_matrix);
     };
 }
 

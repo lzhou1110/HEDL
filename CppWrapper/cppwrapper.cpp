@@ -219,6 +219,23 @@ namespace wrapper {
     void Wrapper::init_batch_encoder() {
         cout << "Initialising batch encoder" << endl;
         this->batchEncoder = new BatchEncoder(this->context);
+        this->batching_slot_count = this->batchEncoder->slot_count();
+        this->batching_row_count = this->batching_slot_count / 2;
+        cout << "Slot count: " << this->batching_slot_count << endl;
+        cout << "Plaintext matrix row size: " << this->batching_row_count << endl;
+    }
+
+    string Wrapper::batch_encoder(vector<uint64_t> pod_matrix, string plaintext_name) {
+        check_plaintext_name_not_exist(plaintext_name);
+        this->batchEncoder->encode(pod_matrix, this->plaintext_map[plaintext_name]);
+        return plaintext_name;
+    }
+
+    vector<uint64_t> Wrapper::batch_decoder(string plaintext_name) {
+        vector<uint64_t> pod_result;
+        check_plaintext_name_exist(plaintext_name);
+        this->batchEncoder->decode(get_plaintext(plaintext_name), pod_result);
+        return pod_result;
     }
 
     // encrypt & decrypt
@@ -272,6 +289,24 @@ namespace wrapper {
         check_ciphertext_name_exist(ciphertext_name);
         this->evaluator->square_inplace(
             get_ciphertext(ciphertext_name));
+    }
+
+    void Wrapper::evaluator_add_plain_inplace(string ciphertext_name, string plaintext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        check_plaintext_name_exist(plaintext_name);
+        this->evaluator->add_plain_inplace(
+            get_ciphertext(ciphertext_name),
+            get_plaintext(plaintext_name));
+    }
+
+    void Wrapper::evaluator_rotate_rows_inplace(string ciphertext_name, int steps) {
+        check_ciphertext_name_exist(ciphertext_name);
+        this->evaluator->rotate_rows_inplace(get_ciphertext(ciphertext_name), steps, this->galois_keys);
+    }
+
+    void Wrapper::evaluator_rotate_columns_inplace(string ciphertext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        this->evaluator->rotate_columns_inplace(get_ciphertext(ciphertext_name), this->galois_keys);
     }
 
     // relinearization
@@ -356,6 +391,42 @@ namespace wrapper {
     Ciphertext& Wrapper::get_ciphertext(string ciphertext_name) {
         check_ciphertext_name_exist(ciphertext_name);
         return this->ciphertext_map[ciphertext_name];
+    }
+
+    void Wrapper::print_matrix(vector<uint64_t> pod_matrix) {
+        size_t row_size = this->batching_row_count;
+        auto print_matrix = [row_size](auto &matrix) {
+            cout << endl;
+
+            /*
+            We're not going to print every column of the matrix (there are 2048). Instead
+            print this many slots from beginning and end of the matrix.
+            */
+            size_t print_size = 5;
+
+            cout << "    [";
+            for (size_t i = 0; i < print_size; i++)
+            {
+                cout << setw(3) << matrix[i] << ",";
+            }
+            cout << setw(3) << " ...,";
+            for (size_t i = row_size - print_size; i < row_size; i++)
+            {
+                cout << setw(3) << matrix[i] << ((i != row_size - 1) ? "," : " ]\n");
+            }
+            cout << "    [";
+            for (size_t i = row_size; i < row_size + print_size; i++)
+            {
+                cout << setw(3) << matrix[i] << ",";
+            }
+            cout << setw(3) << " ...,";
+            for (size_t i = 2 * row_size - print_size; i < 2 * row_size; i++)
+            {
+                cout << setw(3) << matrix[i] << ((i != 2 * row_size - 1) ? "," : " ]\n");
+            }
+            cout << endl;
+        };
+        print_matrix(pod_matrix);
     }
 }
 
