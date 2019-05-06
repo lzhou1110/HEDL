@@ -1,6 +1,7 @@
 from libcpp.string cimport string
 from libc.stdint cimport int64_t
 from libc.stdint cimport uintptr_t
+from libcpp cimport bool
 
 cdef extern from "cppwrapper.cpp":
     pass
@@ -35,6 +36,9 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
         string integer_encoder(int integer, string plaintext_name) except +
         int64_t integer_decoder(string plaintext_name) except +
 
+        # batch encoder
+        void init_batch_encoder() except +
+
         # encrypt & decrypt
         int decryptor_invariant_noise_budget(string ciphertext_name) except +
         string encryptor_encrypt(string plaintext_name, string ciphertext_name) except +
@@ -51,3 +55,7 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
         void relinearization_generate_keys(int decomposition_bit_count, size_t count) except +
         int relinearization_dbc_max() except +
         int relinearization_dbc_min() except +
+
+        # batching
+        bool batching_is_enabled() except +
+        void batching_generate_galois_keys(int decomposition_bit_count) except +

@@ -138,3 +138,23 @@ def bfv_example_2():
     print("Eighth power result: {}".format(wrapper.plaintext_to_string(power8_result)))
     wrapper.clear_all_stored_pointers()
 
+
+def bfv_example_3():
+    print("===========Example: BFV Basics III===========")
+    scheme = bstr("BFV")
+    security_level = 128
+    poly_modulus_degree = 4096
+    coeff_modulus = 4096
+    plain_modulus = 40961
+    # Note here, plain_modulues congruent to 1 mod 2*ploy_modulus_degree, thus batching is enabled
+    wrapper = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
+    wrapper.print_seal_version()
+    wrapper.print_allocated_memory()
+    wrapper.print_parameters()
+
+    print("Is batching enabled? {}".format(wrapper.batching_is_enabled()))
+    wrapper.batching_generate_galois_keys(30)
+
+    wrapper.init_batch_encoder()
+
+

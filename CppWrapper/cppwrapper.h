@@ -38,6 +38,8 @@ namespace wrapper {
             void init_integer_encoder();
             string integer_encoder(int integer, string plaintext_name);
             int64_t integer_decoder(string plaintext_pointer);
+            // batch encoder
+            void init_batch_encoder();
             // encrypt & decrypt
             int decryptor_invariant_noise_budget(string ciphertext_name);
             string encryptor_encrypt(string plaintext_name, string ciphertext_name);
@@ -52,7 +54,9 @@ namespace wrapper {
             void relinearization_generate_keys(int decomposition_bit_count, size_t count);
             int relinearization_dbc_max();
             int relinearization_dbc_min();
-
+            // batching
+            bool batching_is_enabled();
+            void batching_generate_galois_keys(int decomposition_bit_count);
 
         private:
             /* Members */
@@ -60,11 +64,13 @@ namespace wrapper {
             map<string, Ciphertext> ciphertext_map;
             shared_ptr<SEALContext> context;
             IntegerEncoder*integerEncoder;
+            BatchEncoder*batchEncoder;
             Encryptor*encryptor;
             Evaluator*evaluator;
             Decryptor*decryptor;
             KeyGenerator*keygen;
-            RelinKeys relinearize_key;
+            RelinKeys relinearize_keys;
+            GaloisKeys galois_keys;
 
             /* Methods */
             void check_plaintext_name_exist(string plaintext_name);

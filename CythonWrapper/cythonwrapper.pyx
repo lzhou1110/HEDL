@@ -52,6 +52,10 @@ cdef class CythonWrapper:
     def integer_decoder(self, string plaintext_name):
         return self.wrapper.integer_decoder(plaintext_name)
 
+    # batch encoder
+    def init_batch_encoder(self):
+        self.wrapper.init_batch_encoder()
+
     # encrypt & decrypt
     def decryptor_invariant_noise_budget(self, string ciphertext_name):
         return self.wrapper.decryptor_invariant_noise_budget(ciphertext_name)
@@ -87,3 +91,10 @@ cdef class CythonWrapper:
 
     def relinearization_dbc_min(self):
         return self.wrapper.relinearization_dbc_min()
+
+    # batching
+    def batching_is_enabled(self):
+        return self.wrapper.batching_is_enabled()
+
+    def batching_generate_galois_keys(self, int decomposition_bit_count):
+        return self.wrapper.batching_generate_galois_keys(decomposition_bit_count)

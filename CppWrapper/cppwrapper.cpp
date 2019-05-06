@@ -211,7 +211,14 @@ namespace wrapper {
     }
 
     int64_t Wrapper::integer_decoder(string plaintext_name) {
+        check_plaintext_name_exist(plaintext_name);
         return this->integerEncoder->decode_int64(get_plaintext(plaintext_name));
+    }
+
+    // batch encoder
+    void Wrapper::init_batch_encoder() {
+        cout << "Initialising batch encoder" << endl;
+        this->batchEncoder = new BatchEncoder(this->context);
     }
 
     // encrypt & decrypt
@@ -237,7 +244,7 @@ namespace wrapper {
     // evaluator
     void Wrapper::evaluator_relinearize_inplace(string ciphertext_name) {
         check_ciphertext_name_exist(ciphertext_name);
-        this->evaluator->relinearize_inplace(get_ciphertext(ciphertext_name), this->relinearize_key);
+        this->evaluator->relinearize_inplace(get_ciphertext(ciphertext_name), this->relinearize_keys);
     }
 
     void Wrapper::evaluator_negate_inplace(string ciphertext_name) {
@@ -276,7 +283,7 @@ namespace wrapper {
 
         Reducing a ciphertext of size M >= 2 back to size 2 will need M-2 relinearization keys
         */
-        this->relinearize_key = this->keygen->relin_keys(decomposition_bit_count, count);
+        this->relinearize_keys = this->keygen->relin_keys(decomposition_bit_count, count);
     }
 
     int Wrapper::relinearization_dbc_max() {
@@ -287,6 +294,21 @@ namespace wrapper {
     int Wrapper::relinearization_dbc_min() {
         // Roughly 1
         return DefaultParams::dbc_min();
+    }
+
+    // batching
+    bool Wrapper::batching_is_enabled() {
+        auto qualifiers = this->context->context_data()->qualifiers();
+        return qualifiers.using_batching;
+    }
+
+    void Wrapper::batching_generate_galois_keys(int decomposition_bit_count) {
+        /*
+        Galois keys:
+        Large decomposition bit count -> fast matrix row/column rotation -> more noise budget consumption
+        Small decomposition bit count -> slow matrix row/column rotation -> less noise budget consumption
+        */
+        this->galois_keys = this->keygen->galois_keys(decomposition_bit_count);
     }
 
     /* Private Methods */
