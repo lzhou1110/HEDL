@@ -206,4 +206,25 @@ def bfv_example_3():
     print(f"Rotated matrix 4 steps to right:\n{matrix_row_rotate_n4}")
     print(f"Noise budget after rotation: {wrapper.decryptor_invariant_noise_budget(ciphertext1)} bits")
 
+def bfv_example_4():
+    print("===========Example: BFV Basics IV===========")
+    scheme = bstr("BFV")
+    security_level = 128
+    poly_modulus_degree = 8192
+    coeff_modulus = 8192
+    plain_modulus = np.power(2, 20)
+    wrapper = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
+    print(f"parms_id: {wrapper.get_parms_id_for_encryption_parameters()}")
+    print("Changing plain_modulus ...")
+    plain_modulus = np.power(2, 20) + 1
+    wrapper = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
+    print(f"parms_id: {wrapper.get_parms_id_for_encryption_parameters()}")
+    wrapper.print_parameters()
+    print(f"parms_id of public key: {wrapper.get_parms_id_for_public_key()}")
+    print(f"parms_id of secret key: {wrapper.get_parms_id_for_secret_key()}")
+    plaintext = wrapper.plaintext_create(bstr("1x^3 + 2x^2 + 3x^1 + 4"), bstr("plaintext"))
+    ciphertext = wrapper.encryptor_encrypt(plaintext, bstr("ciphertext"))
+    print(f"parms_id of plaintext: {wrapper.get_parms_id_for_plaintext(plaintext)} (not set for BFV)")
+    print(f"parms_id of ciphertext: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
+
 

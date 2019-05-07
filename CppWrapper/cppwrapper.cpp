@@ -14,10 +14,16 @@
 #include "seal/seal.h"
 #include "cppwrapper.h"
 
-
-
 using namespace std;
 using namespace seal;
+
+string convert_parms_id_to_string(array<long unsigned int, 4> parms_id) {
+    string result;
+    for (long unsigned int i : parms_id) {
+        result += to_string(i);
+    }
+    return result;
+}
 
 namespace wrapper {
 
@@ -60,43 +66,43 @@ namespace wrapper {
         int coeff_modulus,
         int plain_modulus
     ) {
-        EncryptionParameters*parms;
         // Construct the corresponding encryption parameters based on scheme
         if (scheme == "BFV") {
-            parms = new EncryptionParameters(scheme_type::BFV);
+            this->parms = new EncryptionParameters(scheme_type::BFV);
         } else if (scheme == "CKKS") {
-            parms = new EncryptionParameters(scheme_type::CKKS);
+            this->parms = new EncryptionParameters(scheme_type::CKKS);
         } else {
             throw invalid_argument("unsupported scheme, choose among BFV, CKKS");
         }
 
-        parms->set_poly_modulus_degree(poly_modulus_degree);
+        this->parms->set_poly_modulus_degree(poly_modulus_degree);
 
         if (security_level == 128) {
-            parms->set_coeff_modulus(DefaultParams::coeff_modulus_128(poly_modulus_degree));
+            this->parms->set_coeff_modulus(DefaultParams::coeff_modulus_128(poly_modulus_degree));
         } else if (security_level == 192) {
-            parms->set_coeff_modulus(DefaultParams::coeff_modulus_192(poly_modulus_degree));
+            this->parms->set_coeff_modulus(DefaultParams::coeff_modulus_192(poly_modulus_degree));
         } else if (security_level == 256) {
-            parms->set_coeff_modulus(DefaultParams::coeff_modulus_256(poly_modulus_degree));
+            this->parms->set_coeff_modulus(DefaultParams::coeff_modulus_256(poly_modulus_degree));
         } else {
             throw invalid_argument("unsupported security level, choose among 128, 192, 256");
         }
 
         // CKKS does not use the plain modulus coefficient
         if (scheme == "BFV") {
-            parms->set_plain_modulus(plain_modulus);
+            this->parms->set_plain_modulus(plain_modulus);
         }
-        this->context = SEALContext::Create(*parms);
+        this->context = SEALContext::Create(*this->parms);
 
         // Creating keys
         this->keygen = new KeyGenerator(context);
-        auto public_key = this->keygen->public_key();
-        auto secret_key = this->keygen->secret_key();
+        this->public_key = this->keygen->public_key();
+        this->secret_key = this->keygen->secret_key();
 
         // Creating encryptor, evaluator, decryptor
         this->encryptor = new Encryptor(this->context, public_key);
-        this->evaluator = new Evaluator(this->context);
         this->decryptor = new Decryptor(this->context, secret_key);
+        this->evaluator = new Evaluator(this->context);
+
 
     }
 
@@ -162,6 +168,27 @@ namespace wrapper {
     void Wrapper::print_allocated_memory() {
         cout << "\nTotal memory allocated from the current memory pool: "
         << (MemoryManager::GetPool().alloc_byte_count() >> 20) << " MB" << endl;
+    }
+
+    // context
+    string Wrapper::get_parms_id_for_encryption_parameters() {
+        return convert_parms_id_to_string(this->parms->parms_id());
+    }
+
+    string Wrapper::get_parms_id_for_public_key() {
+        return convert_parms_id_to_string(this->public_key.parms_id());
+    }
+
+    string Wrapper::get_parms_id_for_secret_key() {
+        return convert_parms_id_to_string(this->secret_key.parms_id());
+    }
+
+    string Wrapper::get_parms_id_for_plaintext(string plaintext_name) {
+        return convert_parms_id_to_string(get_plaintext(plaintext_name).parms_id());
+    }
+
+    string Wrapper::get_parms_id_for_ciphertext(string ciphertext_name) {
+        return convert_parms_id_to_string(get_ciphertext(ciphertext_name).parms_id());
     }
 
     // pointers management

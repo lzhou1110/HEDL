@@ -20,6 +20,13 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
         void print_parameters()
         void print_allocated_memory()
 
+        # context
+        string get_parms_id_for_encryption_parameters()
+        string get_parms_id_for_public_key()
+        string get_parms_id_for_secret_key()
+        string get_parms_id_for_plaintext(string plaintext_name) except +
+        string get_parms_id_for_ciphertext(string ciphertext_name) except +
+
         # pointers management
         void clear_all_stored_pointers() except +
         void clear_plaintext(string plaintext_name) except +

@@ -25,6 +25,12 @@ namespace wrapper {
             void print_seal_version();
             void print_parameters();
             void print_allocated_memory();
+            // context
+            string get_parms_id_for_encryption_parameters();
+            string get_parms_id_for_public_key();
+            string get_parms_id_for_secret_key();
+            string get_parms_id_for_plaintext(string plaintext_name);
+            string get_parms_id_for_ciphertext(string ciphertext_name);
             // pointers management
             void clear_all_stored_pointers();
             void clear_plaintext(string plaintext_name);
@@ -67,15 +73,23 @@ namespace wrapper {
             /* Members */
             map<string, Plaintext> plaintext_map;
             map<string, Ciphertext> ciphertext_map;
+            // context
+            EncryptionParameters*parms;
             shared_ptr<SEALContext> context;
+            // encoders
             IntegerEncoder*integerEncoder;
             BatchEncoder*batchEncoder;
-            Encryptor*encryptor;
-            Evaluator*evaluator;
-            Decryptor*decryptor;
+            // keys
             KeyGenerator*keygen;
+            PublicKey public_key;
+            SecretKey secret_key;
             RelinKeys relinearize_keys;
             GaloisKeys galois_keys;
+            // encryptor, decryptor, evaluator, created using keys
+            Encryptor*encryptor;
+            Decryptor*decryptor;
+            Evaluator*evaluator;
+            // batching parameters for BFV only
             size_t batching_slot_count;
             size_t batching_row_count;
 

@@ -32,6 +32,22 @@ cdef class CythonWrapper:
     def clear_ciphertext(self, string ciphertext_name):
         self.wrapper.clear_ciphertext(ciphertext_name)
 
+    # context
+    def get_parms_id_for_encryption_parameters(self):
+        return self.wrapper.get_parms_id_for_encryption_parameters()
+
+    def get_parms_id_for_public_key(self):
+        return self.wrapper.get_parms_id_for_public_key()
+
+    def get_parms_id_for_secret_key(self):
+        return self.wrapper.get_parms_id_for_secret_key()
+
+    def get_parms_id_for_plaintext(self, string plaintext_name):
+        return self.wrapper.get_parms_id_for_plaintext(plaintext_name)
+
+    def get_parms_id_for_ciphertext(self, string ciphertext_name):
+        return self.wrapper.get_parms_id_for_ciphertext(ciphertext_name)
+
     # plaintext
     def plaintext_to_string(self, string plaintext_name):
         return self.wrapper.plaintext_to_string(plaintext_name)
