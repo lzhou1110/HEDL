@@ -170,6 +170,24 @@ namespace wrapper {
         << (MemoryManager::GetPool().alloc_byte_count() >> 20) << " MB" << endl;
     }
 
+    void Wrapper::print_modulus_switching_chain() {
+        for(auto context_data = this->context->context_data(); context_data;
+            context_data = context_data->next_context_data())
+        {
+            cout << "Chain index: " << context_data->chain_index() << endl;
+            cout << "parms_id: " << convert_parms_id_to_string(context_data->parms().parms_id()) << endl;
+            cout << "coeff_modulus primes: ";
+            cout << hex;
+            for(const auto &prime : context_data->parms().coeff_modulus())
+            {
+                cout << prime.value() << " ";
+            }
+            cout << dec << endl;
+            cout << "\\" << endl;
+            cout << " \\-->" << endl;
+        }
+        cout << "End of chain reached" << endl << endl;
+    }
     // context
     string Wrapper::get_parms_id_for_encryption_parameters() {
         return convert_parms_id_to_string(this->parms->parms_id());
@@ -334,6 +352,11 @@ namespace wrapper {
     void Wrapper::evaluator_rotate_columns_inplace(string ciphertext_name) {
         check_ciphertext_name_exist(ciphertext_name);
         this->evaluator->rotate_columns_inplace(get_ciphertext(ciphertext_name), this->galois_keys);
+    }
+
+    void Wrapper::evaluator_mod_switch_to_next_inplace(string ciphertext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        this->evaluator->mod_switch_to_next_inplace(get_ciphertext(ciphertext_name));
     }
 
     // relinearization

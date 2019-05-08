@@ -1,6 +1,5 @@
 from CythonWrapper.cythonwrapper import CythonWrapper
 import numpy as np
-
 from utils import bstr
 
 
@@ -15,36 +14,29 @@ def bfv_example_1():
     wrapper.print_seal_version()
     wrapper.print_allocated_memory()
     wrapper.print_parameters()
-
     # Using integer encoder
     wrapper.init_integer_encoder()
-
     value1 = 5
     value2 = -7
     plain1 = wrapper.integer_encoder(value1, bstr('plain1'))
     plain2 = wrapper.integer_encoder(value2, bstr('plain2'))
     print("Encoded {} as polynomial {}".format(value1, wrapper.plaintext_to_string(plain1)))
     print("Encoded {} as polynomial {}".format(value2, wrapper.plaintext_to_string(plain2)))
-
     cipher1 = wrapper.encryptor_encrypt(plain1, bstr('cipher1'))
     cipher2 = wrapper.encryptor_encrypt(plain2, bstr('cipher2'))
     print("Noise budget cipher1: {} bits"
           .format(wrapper.decryptor_invariant_noise_budget(cipher1)))
     print("Noise budget cipher2: {} bits"
           .format(wrapper.decryptor_invariant_noise_budget(cipher2)))
-
     wrapper.evaluator_negate_inplace(cipher1)
     print("Noise budget -cipher1: {} bits"
           .format(wrapper.decryptor_invariant_noise_budget(cipher1)))
-
     wrapper.evaluator_add_inplace(cipher1, cipher2)
     print("Noise budge -cipher1 + cipher2: {} bits"
           .format(wrapper.decryptor_invariant_noise_budget(cipher1)))
-
     wrapper.evaluator_multiply_inplace(cipher1, cipher2)
     print("Noise budge (-cipher1 + cipher2) * cipher2: {} bits"
           .format(wrapper.decryptor_invariant_noise_budget(cipher1)))
-
     plain_result = wrapper.decryptor_decrypt(cipher1, bstr('plain_result'))
     print("Plaintext polynomial: {}".format(wrapper.plaintext_to_string(plain_result)))
     print("Decoded integer: {}".format(wrapper.integer_decoder(plain_result)))
@@ -62,7 +54,6 @@ def bfv_example_2():
     wrapper.print_seal_version()
     wrapper.print_allocated_memory()
     wrapper.print_parameters()
-
     print("\nExperiment 1: without relinearization \n")
     plain = wrapper.plaintext_create(bstr("1x^2 + 2x^1 + 3"), bstr('plain'))
     print('Encrypting plaintext: {}'.format(wrapper.plaintext_to_string(plain)))
@@ -78,7 +69,6 @@ def bfv_example_2():
     power4_result = wrapper.decryptor_decrypt(cipher, bstr('power4_result'))
     print("Fourth power result: {}".format(wrapper.plaintext_to_string(power4_result)))
     wrapper.clear_all_stored_pointers()
-
     print("\nExperiment 2, with relinearization of 16 dbc \n")
     decomposition_bit_count = 16
     relinearization_key_size = 1
@@ -103,7 +93,6 @@ def bfv_example_2():
     power4_result = wrapper.decryptor_decrypt(cipher, bstr('power4_result'))
     print("Fourth power result: {}".format(wrapper.plaintext_to_string(power4_result)))
     wrapper.clear_all_stored_pointers()
-
     print("\nExperiment 3, with relinearization of max dbc \n")
     decomposition_bit_count = wrapper.relinearization_dbc_max()
     relinearization_key_size = 1
@@ -127,7 +116,6 @@ def bfv_example_2():
     print('Noise budget after relinearization: {} bits'.format(wrapper.decryptor_invariant_noise_budget(cipher)))
     power4_result = wrapper.decryptor_decrypt(cipher, bstr('power4_result'))
     print("Fourth power result: {}".format(wrapper.plaintext_to_string(power4_result)))
-
     wrapper.evaluator_square_inplace(cipher)
     print('Size after third squaring: {}'.format(wrapper.ciphertext_size(cipher)))
     print('Noise budget after third squaring: {} bits'.format(wrapper.decryptor_invariant_noise_budget(cipher)))
@@ -169,7 +157,7 @@ def bfv_example_3():
     for i in range(2):
         for j in range(2048):
             if j % 2 == 1:
-                python_pod_matrix2[i,j] = 2
+                python_pod_matrix2[i, j] = 2
     print(f"Second input matrix:\n{python_pod_matrix2}")
     # Experiment 1, batching a vector
     plaintext1 = wrapper.batch_encoder(python_pod_matrix1.flatten(), bstr('plaintext1'))
@@ -205,9 +193,12 @@ def bfv_example_3():
     matrix_row_rotate_n4 = np.array(wrapper.batch_decoder(plaintext_row_rotate_n4)).reshape(2, 2048)
     print(f"Rotated matrix 4 steps to right:\n{matrix_row_rotate_n4}")
     print(f"Noise budget after rotation: {wrapper.decryptor_invariant_noise_budget(ciphertext1)} bits")
+    wrapper.clear_all_stored_pointers()
+
 
 def bfv_example_4():
     print("===========Example: BFV Basics IV===========")
+    # Introducing parms_id
     scheme = bstr("BFV")
     security_level = 128
     poly_modulus_degree = 8192
@@ -226,5 +217,42 @@ def bfv_example_4():
     ciphertext = wrapper.encryptor_encrypt(plaintext, bstr("ciphertext"))
     print(f"parms_id of plaintext: {wrapper.get_parms_id_for_plaintext(plaintext)} (not set for BFV)")
     print(f"parms_id of ciphertext: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
-
+    wrapper.print_modulus_switching_chain()
+    print("Beginning of chain")
+    print(f"parms_id of ciphertext: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
+    print(f"Noise budget at this level: {wrapper.decryptor_invariant_noise_budget(ciphertext)}")
+    wrapper.evaluator_mod_switch_to_next_inplace(ciphertext)
+    print(f"parms_id of ciphertext: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
+    print(f"Noise budget at this level: {wrapper.decryptor_invariant_noise_budget(ciphertext)}")
+    wrapper.evaluator_mod_switch_to_next_inplace(ciphertext)
+    print(f"parms_id of ciphertext: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
+    print(f"Noise budget at this level: {wrapper.decryptor_invariant_noise_budget(ciphertext)}")
+    wrapper.evaluator_mod_switch_to_next_inplace(ciphertext)
+    print(f"parms_id of ciphertext: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
+    print(f"Noise budget at this level: {wrapper.decryptor_invariant_noise_budget(ciphertext)}")
+    decrypted_plaintext = wrapper.decryptor_decrypt(ciphertext, bstr("decrypted_plaintext"))
+    print(f"Decryption: {wrapper.plaintext_to_string(decrypted_plaintext)}")
+    wrapper.clear_all_stored_pointers()
+    # A demo
+    wrapper.relinearization_generate_keys(wrapper.relinearization_dbc_max(), 1);
+    plaintext = wrapper.plaintext_create(bstr("1x^3 + 2x^2 + 3x^1 + 4"), bstr("plaintext"))
+    ciphertext = wrapper.encryptor_encrypt(plaintext, bstr("ciphertext"))
+    print(f"Noise budget before squaring: {wrapper.decryptor_invariant_noise_budget(ciphertext)} bits")
+    wrapper.evaluator_square_inplace(ciphertext)
+    wrapper.evaluator_relinearize_inplace(ciphertext)
+    print(f"Noise budget after squaring: {wrapper.decryptor_invariant_noise_budget(ciphertext)} bits")
+    wrapper.evaluator_mod_switch_to_next_inplace(ciphertext)
+    print(f"Noise budget after mod switching: {wrapper.decryptor_invariant_noise_budget(ciphertext)} bits")
+    wrapper.evaluator_square_inplace(ciphertext)
+    wrapper.evaluator_relinearize_inplace(ciphertext)
+    print(f"Noise budget after squaring: {wrapper.decryptor_invariant_noise_budget(ciphertext)} bits")
+    wrapper.evaluator_mod_switch_to_next_inplace(ciphertext)
+    print(f"Noise budget after mod switching: {wrapper.decryptor_invariant_noise_budget(ciphertext)} bits")
+    wrapper.evaluator_square_inplace(ciphertext)
+    wrapper.evaluator_relinearize_inplace(ciphertext)
+    print(f"Noise budget after squaring: {wrapper.decryptor_invariant_noise_budget(ciphertext)} bits")
+    wrapper.evaluator_mod_switch_to_next_inplace(ciphertext)
+    print(f"Noise budget after mod switching: {wrapper.decryptor_invariant_noise_budget(ciphertext)} bits")
+    decrypted_plaintext = wrapper.decryptor_decrypt(ciphertext, bstr("decrypted_plaintext"))
+    print(f"Decryption of eighth power: {wrapper.plaintext_to_string(decrypted_plaintext)}")
 

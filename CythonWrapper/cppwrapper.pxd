@@ -19,6 +19,7 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
         void print_seal_version()
         void print_parameters()
         void print_allocated_memory()
+        void print_modulus_switching_chain()
 
         # context
         string get_parms_id_for_encryption_parameters()
@@ -63,6 +64,7 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
         void evaluator_add_plain_inplace(string ciphertext_name, string plaintext_name) except +
         void evaluator_rotate_rows_inplace(string ciphertext_name, int steps) except +
         void evaluator_rotate_columns_inplace(string ciphertext_name) except +
+        void evaluator_mod_switch_to_next_inplace(string ciphertext_name) except +
 
         # relinearization
         void relinearization_generate_keys(int decomposition_bit_count, size_t count) except +

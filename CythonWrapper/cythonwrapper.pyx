@@ -22,6 +22,9 @@ cdef class CythonWrapper:
     def print_allocated_memory(self):
         self.wrapper.print_allocated_memory()
 
+    def print_modulus_switching_chain(self):
+        self.wrapper.print_modulus_switching_chain()
+
     # memory management
     def clear_all_stored_pointers(self):
         self.wrapper.clear_all_stored_pointers()
@@ -113,6 +116,9 @@ cdef class CythonWrapper:
 
     def evaluator_rotate_columns_inplace(self, string ciphertext_name):
         self.wrapper.evaluator_rotate_columns_inplace(ciphertext_name)
+
+    def evaluator_mod_switch_to_next_inplace(self, string ciphertext_name):
+        self.wrapper.evaluator_mod_switch_to_next_inplace(ciphertext_name)
 
     # relinearization
     def relinearization_generate_keys(self, int decomposition_bit_count, int count):
