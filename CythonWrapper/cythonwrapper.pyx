@@ -4,7 +4,6 @@ from libcpp.vector cimport vector
 from libc.stdint cimport uint64_t
 from cppwrapper cimport Wrapper
 
-
 cdef class CythonWrapper:
     cdef Wrapper wrapper
 
@@ -12,30 +11,16 @@ cdef class CythonWrapper:
                   int plain_modulus):
         self.wrapper = Wrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
 
-    # logging
-    def print_seal_version(self):
-        self.wrapper.print_seal_version()
-
-    def print_parameters(self):
-        self.wrapper.print_parameters()
-
-    def print_allocated_memory(self):
-        self.wrapper.print_allocated_memory()
-
-    def print_modulus_switching_chain(self):
-        self.wrapper.print_modulus_switching_chain()
-
-    # memory management
-    def clear_all_stored_pointers(self):
-        self.wrapper.clear_all_stored_pointers()
-
-    def clear_plaintext(self, string plaintext_name):
-        self.wrapper.clear_plaintext(plaintext_name)
-
-    def clear_ciphertext(self, string ciphertext_name):
-        self.wrapper.clear_ciphertext(ciphertext_name)
-
     # context
+    def context_chain_get_all_indexes(self):
+        return self.wrapper.context_chain_get_all_indexes()
+
+    def context_chain_get_parms_id_at_index(self, int index):
+        return self.wrapper.context_chain_get_parms_id_at_index(index)
+
+    def context_chain_print_coeff_modulus_primes_at_index(self, int index):
+        return self.wrapper.context_chain_print_coeff_modulus_primes_at_index(index)
+
     def get_parms_id_for_encryption_parameters(self):
         return self.wrapper.get_parms_id_for_encryption_parameters()
 
@@ -50,6 +35,16 @@ cdef class CythonWrapper:
 
     def get_parms_id_for_ciphertext(self, string ciphertext_name):
         return self.wrapper.get_parms_id_for_ciphertext(ciphertext_name)
+
+    # pointer management
+    def clear_all_stored_pointers(self):
+        self.wrapper.clear_all_stored_pointers()
+
+    def clear_plaintext(self, string plaintext_name):
+        self.wrapper.clear_plaintext(plaintext_name)
+
+    def clear_ciphertext(self, string ciphertext_name):
+        self.wrapper.clear_ciphertext(ciphertext_name)
 
     # plaintext
     def plaintext_to_string(self, string plaintext_name):
@@ -82,9 +77,16 @@ cdef class CythonWrapper:
     def batch_decoder(self, string plaintext_name):
         return self.wrapper.batch_decoder(plaintext_name)
 
+    # ckks encoder
+    def init_ckks_encoder(self):
+        self.wrapper.init_ckks_encoder()
+
+    def ckks_encoder(self, vector[double] input, double scale, string plaintext_name):
+        return self.wrapper.ckks_encoder(input, scale, plaintext_name)
+
     # encrypt & decrypt
-    def decryptor_invariant_noise_budget(self, string ciphertext_name):
-        return self.wrapper.decryptor_invariant_noise_budget(ciphertext_name)
+    def decryptor_noise_budget(self, string ciphertext_name):
+        return self.wrapper.decryptor_noise_budget(ciphertext_name)
 
     def encryptor_encrypt(self, string plaintext_name, string ciphertext_name):
         return self.wrapper.encryptor_encrypt(plaintext_name, ciphertext_name)

@@ -3,6 +3,8 @@ from libc.stdint cimport int64_t
 from libc.stdint cimport uint64_t
 from libcpp cimport bool
 from libcpp.vector cimport vector
+from cython cimport ulong
+
 
 cdef extern from "cppwrapper.cpp":
     pass
@@ -15,18 +17,15 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
         Wrapper() except +
         Wrapper(string scheme, int security_level, int poly_modulus_degree, int coeff_modulus, int plain_modulus) except +
 
-        # logging
-        void print_seal_version()
-        void print_parameters()
-        void print_allocated_memory()
-        void print_modulus_switching_chain()
-
         # context
-        string get_parms_id_for_encryption_parameters()
-        string get_parms_id_for_public_key()
-        string get_parms_id_for_secret_key()
-        string get_parms_id_for_plaintext(string plaintext_name) except +
-        string get_parms_id_for_ciphertext(string ciphertext_name) except +
+        vector[size_t] context_chain_get_all_indexes() except +
+        vector[long unsigned int] context_chain_get_parms_id_at_index(size_t index) except +
+        void context_chain_print_coeff_modulus_primes_at_index(size_t index) except +
+        vector[long unsigned int] get_parms_id_for_encryption_parameters()
+        vector[long unsigned int] get_parms_id_for_public_key()
+        vector[long unsigned int] get_parms_id_for_secret_key()
+        vector[long unsigned int] get_parms_id_for_plaintext(string plaintext_name) except +
+        vector[long unsigned int] get_parms_id_for_ciphertext(string ciphertext_name) except +
 
         # pointers management
         void clear_all_stored_pointers() except +
@@ -50,8 +49,12 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
         string batch_encoder(vector[uint64_t] pod_matrix, string plaintext_name) except +
         vector[uint64_t] batch_decoder(string plaintext_name) except +
 
+        # ckks encoder
+        void init_ckks_encoder() except +
+        string ckks_encoder(vector[double] input, double scale, string plaintext_name) except +
+
         # encrypt & decrypt
-        int decryptor_invariant_noise_budget(string ciphertext_name) except +
+        int decryptor_noise_budget(string ciphertext_name) except +
         string encryptor_encrypt(string plaintext_name, string ciphertext_name) except +
         string decryptor_decrypt(string ciphertext_name, string plaintext_name) except +
 

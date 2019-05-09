@@ -21,17 +21,15 @@ namespace wrapper {
             ~Wrapper();
 
             /* Methods */
-            // logging
-            void print_seal_version();
-            void print_parameters();
-            void print_allocated_memory();
-            void print_modulus_switching_chain();
             // context
-            string get_parms_id_for_encryption_parameters();
-            string get_parms_id_for_public_key();
-            string get_parms_id_for_secret_key();
-            string get_parms_id_for_plaintext(string plaintext_name);
-            string get_parms_id_for_ciphertext(string ciphertext_name);
+            vector<size_t> context_chain_get_all_indexes();
+            vector<long unsigned int> context_chain_get_parms_id_at_index(size_t index);
+            void context_chain_print_coeff_modulus_primes_at_index(size_t index);
+            vector<long unsigned int> get_parms_id_for_encryption_parameters();
+            vector<long unsigned int> get_parms_id_for_public_key();
+            vector<long unsigned int> get_parms_id_for_secret_key();
+            vector<long unsigned int> get_parms_id_for_plaintext(string plaintext_name);
+            vector<long unsigned int> get_parms_id_for_ciphertext(string ciphertext_name);
             // pointers management
             void clear_all_stored_pointers();
             void clear_plaintext(string plaintext_name);
@@ -49,8 +47,11 @@ namespace wrapper {
             void init_batch_encoder();
             string batch_encoder(vector<uint64_t> pod_matrix, string plaintext_name);
             vector<uint64_t> batch_decoder(string plaintext_name);
+            // ckks encoder
+            void init_ckks_encoder();
+            string ckks_encoder(vector<double> input, double scale, string plaintext_name);
             // encrypt & decrypt
-            int decryptor_invariant_noise_budget(string ciphertext_name);
+            int decryptor_noise_budget(string ciphertext_name);
             string encryptor_encrypt(string plaintext_name, string ciphertext_name);
             string decryptor_decrypt(string ciphertext_name, string plaintext_name);
             // evaluator
@@ -81,6 +82,7 @@ namespace wrapper {
             // encoders
             IntegerEncoder*integerEncoder;
             BatchEncoder*batchEncoder;
+            CKKSEncoder*ckksEncoder;
             // keys
             KeyGenerator*keygen;
             PublicKey public_key;
@@ -94,8 +96,8 @@ namespace wrapper {
             // batching parameters for BFV only
             size_t batching_slot_count;
             size_t batching_row_count;
-
             /* Methods */
+            void print_info();
             void check_plaintext_name_exist(string plaintext_name);
             void check_ciphertext_name_exist(string ciphertext_name);
             void check_plaintext_name_not_exist(string plaintext_name);

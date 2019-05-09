@@ -17,49 +17,48 @@
 using namespace std;
 using namespace seal;
 
-string convert_parms_id_to_string(array<long unsigned int, 4> parms_id) {
-    string result;
-    for (long unsigned int i : parms_id) {
-        result += to_string(i);
-    }
+
+// Helper functions
+vector<long unsigned int> convert_parms_array_to_vector(array<long unsigned int, 4> parms_id) {
+    std::vector<long unsigned int> result(std::begin(parms_id), std::end(parms_id));
     return result;
 }
+
 
 namespace wrapper {
 
     /* Constructor & Destructor */
-    /*
-    Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (bits)
-
-    - scheme
-        - Brakerski/Fan-Vercauteren (BFV) scheme (https://eprint.iacr.org/2012/144), with FullRNS optimization
-          (https://eprint.iacr.org/2016/510).
-        - Cheon-Kim-Kim-Song (CKKS) scheme (https://eprint.iacr.org/2016/421), with FullRNS optimization
-          (https://eprint.iacr.org/2018/931).
-    - poly_modulus_degree (degree of polynomial modulus)
-        - Must be a power of 2, representing the degree of a power-of-2 cyclotomic polynomial.
-        - Larger degree -> More secure, larger ciphertext sizes, slower operations.
-        - Recommended degrees are 1024, 2048, 4096, 8192, 16384, 32768
-    - coeff_modulus ([ciphertext] coefficient modulus) : size of the bit length of the product of primes
-        - Bigger coefficient -> More noise bugget, Lower security
-        - 128-bits and 192-bits already available, following Security Standard Draft http://HomomorphicEncryption.org
-        - Defaults:
-            DefaultParams::coeff_modulus_128(int)
-            DefaultParams::coeff_modulus_192(int)
-            DefaultParams::coeff_modulus_256(int)
-    - plain_modulus (plaintext modulus)
-        - any positive integer
-        - affects:
-            - size of the plaintext data type
-            - noise budget in freshly encrypted cyphertext
-            - consumption of noise budget in homomorphic (encrypted) multiplications
-    - noise_standard_deviation (default to 3.20, should not be necessary to modify unless there are specific reasons)
-    - random_generator
-    */
-
     Wrapper::Wrapper () {}
 
     Wrapper::Wrapper(
+        /*
+        Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (bits)
+
+        - scheme
+            - Brakerski/Fan-Vercauteren (BFV) scheme (https://eprint.iacr.org/2012/144), with FullRNS optimization
+              (https://eprint.iacr.org/2016/510).
+            - Cheon-Kim-Kim-Song (CKKS) scheme (https://eprint.iacr.org/2016/421), with FullRNS optimization
+              (https://eprint.iacr.org/2018/931).
+        - poly_modulus_degree (degree of polynomial modulus)
+            - Must be a power of 2, representing the degree of a power-of-2 cyclotomic polynomial.
+            - Larger degree -> More secure, larger ciphertext sizes, slower operations.
+            - Recommended degrees are 1024, 2048, 4096, 8192, 16384, 32768
+        - coeff_modulus ([ciphertext] coefficient modulus) : size of the bit length of the product of primes
+            - Bigger coefficient -> More noise bugget, Lower security
+            - 128-bits and 192-bits already available, following Security Standard Draft http://HomomorphicEncryption.org
+            - Defaults:
+                DefaultParams::coeff_modulus_128(int)
+                DefaultParams::coeff_modulus_192(int)
+                DefaultParams::coeff_modulus_256(int)
+        - plain_modulus (plaintext modulus)
+            - any positive integer
+            - affects:
+                - size of the plaintext data type
+                - noise budget in freshly encrypted cyphertext
+                - consumption of noise budget in homomorphic (encrypted) multiplications
+        - noise_standard_deviation (default to 3.20, should not be necessary to modify unless there are specific reasons)
+        - random_generator
+        */
         string scheme,
         int security_level,
         int poly_modulus_degree,
@@ -102,111 +101,74 @@ namespace wrapper {
         this->encryptor = new Encryptor(this->context, public_key);
         this->decryptor = new Decryptor(this->context, secret_key);
         this->evaluator = new Evaluator(this->context);
-
-
+        print_info();
     }
 
     Wrapper::~Wrapper () {}
 
     /* Methods */
-    // logging
-    void Wrapper::print_seal_version() {
-        #ifdef SEAL_VERSION
-        cout << "Microsoft SEAL version: " << SEAL_VERSION << endl;
-        #endif
-    }
-
-    void Wrapper::print_parameters() {
-        // Verify parameters
-        if (!this->context)
-        {
-            throw invalid_argument("context is not set");
-        }
-        auto &context_data = *(this->context)->context_data();
-
-        /*
-        Which scheme are we using?
-        */
-        string scheme_name;
-        switch (context_data.parms().scheme())
-        {
-        case scheme_type::BFV:
-            scheme_name = "BFV";
-            break;
-        case scheme_type::CKKS:
-            scheme_name = "CKKS";
-            break;
-        default:
-            throw invalid_argument("unsupported scheme");
-        }
-
-        cout << "/ Encryption parameters:" << endl;
-        cout << "| scheme: " << scheme_name << endl;
-        cout << "| poly_modulus_degree: " <<
-            context_data.parms().poly_modulus_degree() << endl;
-
-        /*
-        Print the size of the true (product) coefficient modulus.
-        */
-        cout << "| coeff_modulus size: " << context_data.
-            total_coeff_modulus_bit_count() << " bits" << endl;
-
-        /*
-        For the BFV scheme print the plain_modulus parameter.
-        */
-        if (context_data.parms().scheme() == scheme_type::BFV)
-        {
-            cout << "| plain_modulus: " << context_data.
-                parms().plain_modulus().value() << endl;
-        }
-
-        cout << "\\ noise_standard_deviation: " << context_data.
-            parms().noise_standard_deviation() << endl;
-        cout << endl;
-    }
-
-    void Wrapper::print_allocated_memory() {
-        cout << "\nTotal memory allocated from the current memory pool: "
-        << (MemoryManager::GetPool().alloc_byte_count() >> 20) << " MB" << endl;
-    }
-
-    void Wrapper::print_modulus_switching_chain() {
-        for(auto context_data = this->context->context_data(); context_data;
-            context_data = context_data->next_context_data())
-        {
-            cout << "Chain index: " << context_data->chain_index() << endl;
-            cout << "parms_id: " << convert_parms_id_to_string(context_data->parms().parms_id()) << endl;
-            cout << "coeff_modulus primes: ";
-            cout << hex;
-            for(const auto &prime : context_data->parms().coeff_modulus())
-            {
-                cout << prime.value() << " ";
-            }
-            cout << dec << endl;
-            cout << "\\" << endl;
-            cout << " \\-->" << endl;
-        }
-        cout << "End of chain reached" << endl << endl;
-    }
     // context
-    string Wrapper::get_parms_id_for_encryption_parameters() {
-        return convert_parms_id_to_string(this->parms->parms_id());
+    vector<size_t> Wrapper::context_chain_get_all_indexes() {
+        vector<size_t> result;
+        for (
+            auto context_data = this->context->context_data();
+            context_data;
+            context_data = context_data->next_context_data()
+        ) {
+            result.push_back(context_data->chain_index());
+        }
+        return result;
     }
 
-    string Wrapper::get_parms_id_for_public_key() {
-        return convert_parms_id_to_string(this->public_key.parms_id());
+    vector<long unsigned int> Wrapper::context_chain_get_parms_id_at_index(size_t index) {
+        vector<long unsigned int> result;
+        for (
+            auto context_data = this->context->context_data();
+            context_data;
+            context_data = context_data->next_context_data()
+        ) {
+            if (index == context_data->chain_index()) {
+                result = convert_parms_array_to_vector(context_data->parms().parms_id());
+            }
+        }
+        return result;
     }
 
-    string Wrapper::get_parms_id_for_secret_key() {
-        return convert_parms_id_to_string(this->secret_key.parms_id());
+    void Wrapper::context_chain_print_coeff_modulus_primes_at_index(size_t index) {
+        for (
+            auto context_data = this->context->context_data();
+            context_data;
+            context_data = context_data->next_context_data()
+        ) {
+            if (index == context_data->chain_index()) {
+                cout << "coeff_modulus primes: ";
+                cout << hex;
+                for(const auto &prime : context_data->parms().coeff_modulus()) {
+                    cout << prime.value() << " ";
+                }
+                cout << dec << endl;
+            }
+        }
     }
 
-    string Wrapper::get_parms_id_for_plaintext(string plaintext_name) {
-        return convert_parms_id_to_string(get_plaintext(plaintext_name).parms_id());
+    vector<long unsigned int> Wrapper::get_parms_id_for_encryption_parameters() {
+        return convert_parms_array_to_vector(this->parms->parms_id());
     }
 
-    string Wrapper::get_parms_id_for_ciphertext(string ciphertext_name) {
-        return convert_parms_id_to_string(get_ciphertext(ciphertext_name).parms_id());
+    vector<long unsigned int> Wrapper::get_parms_id_for_public_key() {
+        return convert_parms_array_to_vector(this->public_key.parms_id());
+    }
+
+    vector<long unsigned int> Wrapper::get_parms_id_for_secret_key() {
+        return convert_parms_array_to_vector(this->secret_key.parms_id());
+    }
+
+    vector<long unsigned int> Wrapper::get_parms_id_for_plaintext(string plaintext_name) {
+        return convert_parms_array_to_vector(get_plaintext(plaintext_name).parms_id());
+    }
+
+    vector<long unsigned int> Wrapper::get_parms_id_for_ciphertext(string ciphertext_name) {
+        return convert_parms_array_to_vector(get_ciphertext(ciphertext_name).parms_id());
     }
 
     // pointers management
@@ -283,8 +245,21 @@ namespace wrapper {
         return pod_result;
     }
 
+    // ckks encoder
+    void Wrapper::init_ckks_encoder() {
+        cout << "Initialising ckks encoder" << endl;
+        this -> ckksEncoder = new CKKSEncoder(this->context);
+        cout << "Slot count: " << this -> ckksEncoder -> slot_count() << endl;
+    }
+
+    string Wrapper::ckks_encoder(vector<double> input, double scale, string plaintext_name) {
+        check_plaintext_name_not_exist(plaintext_name);
+        this -> ckksEncoder -> encode(input, scale, get_plaintext(plaintext_name));
+        return plaintext_name;
+    }
+
     // encrypt & decrypt
-    int Wrapper::decryptor_invariant_noise_budget(string ciphertext_name) {
+    int Wrapper::decryptor_noise_budget(string ciphertext_name) {
         Ciphertext ciphertext = get_ciphertext(ciphertext_name);
         return this->decryptor->invariant_noise_budget(ciphertext);
     }
@@ -397,6 +372,56 @@ namespace wrapper {
     }
 
     /* Private Methods */
+    // logging
+    void Wrapper::print_info() {
+        #ifdef SEAL_VERSION
+        cout << "Microsoft SEAL version: " << SEAL_VERSION << endl;
+        #endif
+        // Verify parameters
+        if (!this->context)
+        {
+            throw invalid_argument("context is not set");
+        }
+        auto &context_data = *(this->context)->context_data();
+        /*
+        Which scheme are we using?
+        */
+        string scheme_name;
+        switch (context_data.parms().scheme())
+        {
+        case scheme_type::BFV:
+            scheme_name = "BFV";
+            break;
+        case scheme_type::CKKS:
+            scheme_name = "CKKS";
+            break;
+        default:
+            throw invalid_argument("unsupported scheme");
+        }
+        cout << "/ Encryption parameters:" << endl;
+        cout << "| scheme: " << scheme_name << endl;
+        cout << "| poly_modulus_degree: " <<
+            context_data.parms().poly_modulus_degree() << endl;
+        /*
+        Print the size of the true (product) coefficient modulus.
+        */
+        cout << "| coeff_modulus size: " << context_data.
+            total_coeff_modulus_bit_count() << " bits" << endl;
+        /*
+        For the BFV scheme print the plain_modulus parameter.
+        */
+        if (context_data.parms().scheme() == scheme_type::BFV)
+        {
+            cout << "| plain_modulus: " << context_data.
+                parms().plain_modulus().value() << endl;
+        }
+        cout << "| noise_standard_deviation: " << context_data.
+            parms().noise_standard_deviation() << endl;
+        cout << "\\Total memory allocated from the current memory pool: "
+            << (MemoryManager::GetPool().alloc_byte_count() >> 20) << " MB" << endl;
+        cout << endl;
+    }
+
     void Wrapper::check_plaintext_name_exist(string plaintext_name) {
         auto search_result = this->plaintext_map.find(plaintext_name);
         if (search_result == this->plaintext_map.end()) {
