@@ -50,6 +50,12 @@ namespace wrapper {
             // ckks encoder
             void init_ckks_encoder();
             string ckks_encoder(vector<double> input, double scale, string plaintext_name);
+            string ckks_encoder (
+                vector<double> input,
+                vector<long unsigned int> parms_id,
+                double scale, string plaintext_name
+            );
+            vector<double> ckks_decoder(string plaintext_name, int size);
             // encrypt & decrypt
             int decryptor_noise_budget(string ciphertext_name);
             string encryptor_encrypt(string plaintext_name, string ciphertext_name);
@@ -71,6 +77,9 @@ namespace wrapper {
             // batching
             bool batching_is_enabled();
             void batching_generate_galois_keys(int decomposition_bit_count);
+            // ckks
+            double get_scale_for_plaintext(string plaintext_name);
+            double get_scale_for_ciphertext(string ciphertext_name);
 
         private:
             /* Members */

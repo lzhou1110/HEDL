@@ -117,8 +117,8 @@ def bfv_example_2():
 
 
 def bfv_example_3():
+    np.set_printoptions(precision=3)
     print("===========Example: BFV Basics III===========")
-    np.set_printoptions(precision=2)
     scheme = bstr("BFV")
     security_level = 128
     poly_modulus_degree = 4096
@@ -249,24 +249,47 @@ def bfv_example_4():
 
 
 def ckks_example_1():
-    pass
-    # print("===========Example: CKKS Basics I===========")
-    # scheme = bstr("CKKS")
-    # security_level = 128
-    # poly_modulus_degree = 8192
-    # coeff_modulus = 8192
-    # plain_modulus = -1 # This variable is not used, this class should be better designed
-    # wrapper = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
-    # wrapper.print_seal_version()
-    # wrapper.print_allocated_memory()
-    # wrapper.init_ckks_encoder()
-    # input = np.array([0.0, 1.1, 2.2, 3.3], dtype=np.double)
-    # scale = np.power(2.0, 60)
-    # print(f"Input vector: {input}")
-    # plaintext = wrapper.ckks_encoder(input, scale, bstr('plaintext'))
-    # ciphertext = wrapper.encryptor_encrypt(plaintext, bstr('ciphertext'))
-    # print(f"param_id of plaintext {wrapper.get_parms_id_for_plaintext(plaintext)}")
-    # print(f"param_id of ciphertext {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
+    np.set_printoptions(precision=3)
+    print("===========Example: CKKS Basics I===========")
+    scheme = bstr("CKKS")
+    security_level = 128
+    poly_modulus_degree = 8192
+    coeff_modulus = 8192
+    plain_modulus = -1 # This variable is not used, this class should be better designed
+    wrapper = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
+    wrapper.relinearization_generate_keys(wrapper.relinearization_dbc_max(), 1)
+    wrapper.init_ckks_encoder()
+    input = np.array([0.0, 1.1, 2.2, 3.3], dtype=np.double)
+    scale = np.power(2.0, 60).astype(np.double)
+    print(scale)
+    print(f"Input vector: {input}")
+    plaintext = wrapper.ckks_encoder(input, scale, bstr('plaintext'))
+    ciphertext = wrapper.encryptor_encrypt(plaintext, bstr('ciphertext'))
+    print(f"param_id of plaintext {wrapper.get_parms_id_for_plaintext(plaintext)}")
+    print(f"param_id of ciphertext {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
+    print(f"Scale in plaintext: {wrapper.get_scale_for_plaintext(plaintext)}")
+    print(f"Scale in ciphertext: {wrapper.get_scale_for_ciphertext(ciphertext)}")
+    wrapper.evaluator_square_inplace(ciphertext)
+    wrapper.evaluator_relinearize_inplace(ciphertext)
+    decrypted_plaintext = wrapper.decryptor_decrypt(ciphertext, bstr('decrypted_plaintext'))
+    print(f"Squared input: {wrapper.ckks_decoder(decrypted_plaintext, 4)}")
+    print(f"Scale in the square {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
+    print(f"Current parms id: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
+    wrapper.evaluator_mod_switch_to_next_inplace(ciphertext)
+    print(f"parms id after mod switching: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
+    decrypted_plaintext_after_switching = wrapper.decryptor_decrypt(ciphertext, bstr('decrypted_plaintext_after_switching'))
+    print(f"Squared input: {wrapper.ckks_decoder(decrypted_plaintext_after_switching, 4)}")
+    input2 = np.array([20.2, 30.3, 40.4, 50.5], dtype=np.double)
+    plaintext2 = wrapper.ckks_encoder_with_parms(
+        input2,
+        wrapper.get_parms_id_for_ciphertext(ciphertext),
+        wrapper.get_scale_for_ciphertext(ciphertext),
+        bstr('plaintext2')
+    )
+    ciphertext2 = wrapper.encryptor_encrypt(plaintext2, bstr('ciphertext2'))
+    wrapper.evaluator_add_inplace(ciphertext, ciphertext2)
+    plaintext_sum = wrapper.decryptor_decrypt(ciphertext, bstr('plaintext_sum'))
+    print(f"Sum: {wrapper.ckks_decoder(plaintext_sum, 4)}")
 
 
 def ckks_example_2():

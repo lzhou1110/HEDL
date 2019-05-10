@@ -17,13 +17,17 @@
 using namespace std;
 using namespace seal;
 
-
 // Helper functions
 vector<long unsigned int> convert_parms_array_to_vector(array<long unsigned int, 4> parms_id) {
     std::vector<long unsigned int> result(std::begin(parms_id), std::end(parms_id));
     return result;
 }
 
+array<long unsigned int, 4> convert_parms_vector_to_array(vector<long unsigned int> parms_id) {
+    array<long unsigned int, 4> result;
+    copy_n(std::make_move_iterator(parms_id.begin()), 4, result.begin());
+    return result;
+}
 
 namespace wrapper {
 
@@ -254,8 +258,28 @@ namespace wrapper {
 
     string Wrapper::ckks_encoder(vector<double> input, double scale, string plaintext_name) {
         check_plaintext_name_not_exist(plaintext_name);
-        this -> ckksEncoder -> encode(input, scale, get_plaintext(plaintext_name));
+        this -> ckksEncoder -> encode(input, scale, this->plaintext_map[plaintext_name]);
         return plaintext_name;
+    }
+
+    string Wrapper::ckks_encoder(
+        vector<double> input,
+        vector<long unsigned int> parms_id,
+        double scale,
+        string plaintext_name
+    ) {
+        check_plaintext_name_not_exist(plaintext_name);
+        array<long unsigned int, 4> parms_array = convert_parms_vector_to_array(parms_id);
+        this -> ckksEncoder -> encode(input, parms_array, scale, this->plaintext_map[plaintext_name]);
+        return plaintext_name;
+    }
+
+    vector<double> Wrapper::ckks_decoder(string plaintext_name, int size) {
+        vector<double> result;
+        check_plaintext_name_exist(plaintext_name);
+        this -> ckksEncoder -> decode(get_plaintext(plaintext_name), result);
+        result.resize(size);
+        return result;
     }
 
     // encrypt & decrypt
@@ -292,6 +316,7 @@ namespace wrapper {
     void Wrapper::evaluator_add_inplace(string ciphertext_name1, string ciphertext_name2) {
         check_ciphertext_name_exist(ciphertext_name1);
         check_ciphertext_name_exist(ciphertext_name2);
+        cout << "passed checking" << endl;
         this->evaluator->add_inplace(
             get_ciphertext(ciphertext_name1),
             get_ciphertext(ciphertext_name2));
@@ -369,6 +394,17 @@ namespace wrapper {
         Small decomposition bit count -> slow matrix row/column rotation -> less noise budget consumption
         */
         this->galois_keys = this->keygen->galois_keys(decomposition_bit_count);
+    }
+
+    // ckks
+    double Wrapper::get_scale_for_plaintext(string plaintext_name) {
+        check_plaintext_name_exist(plaintext_name);
+        return get_plaintext(plaintext_name).scale();
+    }
+
+    double Wrapper::get_scale_for_ciphertext(string ciphertext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        return get_ciphertext(ciphertext_name).scale();
     }
 
     /* Private Methods */

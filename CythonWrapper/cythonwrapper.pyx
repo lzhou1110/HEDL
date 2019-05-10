@@ -3,6 +3,7 @@ from libcpp.string cimport string
 from libcpp.vector cimport vector
 from libc.stdint cimport uint64_t
 from cppwrapper cimport Wrapper
+from multipledispatch import dispatch
 
 cdef class CythonWrapper:
     cdef Wrapper wrapper
@@ -84,6 +85,12 @@ cdef class CythonWrapper:
     def ckks_encoder(self, vector[double] input, double scale, string plaintext_name):
         return self.wrapper.ckks_encoder(input, scale, plaintext_name)
 
+    def ckks_encoder_with_parms(self, vector[double] input, vector[long unsigned int] parms_id, double scale, string plaintext_name):
+        return self.wrapper.ckks_encoder(input, parms_id, scale, plaintext_name)
+
+    def ckks_decoder(self, string plaintext_name, int size):
+        return self.wrapper.ckks_decoder(plaintext_name, size)
+
     # encrypt & decrypt
     def decryptor_noise_budget(self, string ciphertext_name):
         return self.wrapper.decryptor_noise_budget(ciphertext_name)
@@ -138,3 +145,10 @@ cdef class CythonWrapper:
 
     def batching_generate_galois_keys(self, int decomposition_bit_count):
         return self.wrapper.batching_generate_galois_keys(decomposition_bit_count)
+
+    # ckks
+    def get_scale_for_plaintext(self, string plaintext_name):
+        return self.wrapper.get_scale_for_plaintext(plaintext_name)
+
+    def get_scale_for_ciphertext(self, string ciphertext_name):
+        return self.wrapper.get_scale_for_ciphertext(ciphertext_name)
