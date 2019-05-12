@@ -11,16 +11,19 @@ namespace wrapper {
         public:
             /* Constructor & Destructor */
             Wrapper();
-            Wrapper(
-                string scheme,
-                int security_level,
-                int poly_modulus_degree,
-                int coeff_modulus,
-                int plain_modulus
-            );
+            Wrapper(string scheme);
             ~Wrapper();
-
             /* Methods */
+            // set up
+            void set_coeff_modulus(vector<uint64_t> coeff_modulus);
+            void set_poly_modulus_degree(int poly_modulus_degree);
+            void set_plain_modulus_for_bfv(int plain_modulus);
+            void initiate_seal();
+            // default
+            vector<uint64_t> default_params_coeff_modulus_128(size_t poly_modulus_degeree);
+            uint64_t default_params_small_mods_40bit(size_t index);
+            int default_params_dbc_max();
+            int default_params_dbc_min();
             // context
             vector<size_t> context_chain_get_all_indexes();
             vector<long unsigned int> context_chain_get_parms_id_at_index(size_t index);
@@ -31,6 +34,7 @@ namespace wrapper {
             vector<long unsigned int> get_parms_id_for_ciphertext(string ciphertext_name);
             void context_chain_print_coeff_modulus_primes_at_index(size_t index);
             int get_total_coeff_modulus_bit_count(vector<long unsigned int> parms_id);
+            size_t get_parms_index(vector<long unsigned int> parms_id);
             // pointers management
             void clear_all_stored_pointers();
             void clear_plaintext(string plaintext_name);
@@ -66,27 +70,34 @@ namespace wrapper {
             void evaluator_relinearize_inplace(string ciphertext_name);
             void evaluator_negate_inplace(string ciphertext_name);
             void evaluator_add_inplace(string ciphertext_name1, string ciphertext_name2);
+            string evaluator_add(string ciphertext_name1, string ciphertext_name2, string ciphertext_output_name);
             void evaluator_multiply_inplace(string ciphertext_name1, string ciphertext_name2);
+            string evaluator_multiply_plain(string ciphertext_name, string plaintext_name, string ciphertext_output_name);
+            void evaluator_multiply_plain_inplace(string ciphertext_name, string plaintext_name);
+            string evaluator_square(string ciphertext_input_name, string ciphertext_output_name);
             void evaluator_square_inplace(string ciphertext_name);
             void evaluator_add_plain_inplace(string ciphertext_name, string plaintext_name);
             void evaluator_rotate_rows_inplace(string ciphertext_name, int steps);
             void evaluator_rotate_columns_inplace(string ciphertext_name);
+            void evaluator_mod_switch_to_inplace_ciphertext(string ciphertext_name, vector<long unsigned int> parms_id);
+            void evaluator_mod_switch_to_inplace_plaintext(string plaintext_name, vector<long unsigned int> parms_id);
             void evaluator_mod_switch_to_next_inplace(string ciphertext_name);
             void evaluator_rescale_to_next_inplace(string ciphertext_name);
             // relinearization
             void relinearization_generate_keys(int decomposition_bit_count, size_t count);
-            int relinearization_dbc_max();
-            int relinearization_dbc_min();
             // batching
             bool batching_is_enabled();
             void batching_generate_galois_keys(int decomposition_bit_count);
             // ckks
             double get_scale_for_plaintext(string plaintext_name);
             double get_scale_for_ciphertext(string ciphertext_name);
+            void set_scale_for_plaintext(string plaintext_name, double scale);
+            void set_scale_for_ciphertext(string ciphertext_name, double scale);
 
 
         private:
             /* Members */
+            string scheme;
             map<string, Plaintext> plaintext_map;
             map<string, Ciphertext> ciphertext_map;
             // context

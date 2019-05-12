@@ -6,12 +6,12 @@ from utils import bstr
 
 def bfv_example_1():
     print("===========Example: BFV Basics I===========")
-    scheme = bstr("BFV")
-    security_level = 128
-    poly_modulus_degree = 2048
-    coeff_modulus = 2048
-    plain_modulus = np.power(2, 8)
-    seal = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
+    seal = CythonWrapper(bstr("BFV"))
+    seal.set_poly_modulus_degree(2048)
+    seal.set_coeff_modulus(seal.default_params_coeff_modulus_128(2048))
+    seal.set_plain_modulus_for_bfv(np.power(2, 8))
+    seal.initiate_seal()
+
     # Using integer encoder
     seal.init_integer_encoder()
     value1 = 5
@@ -38,12 +38,12 @@ def bfv_example_1():
 
 def bfv_example_2():
     print("===========Example: BFV Basics II===========")
-    scheme = bstr("BFV")
-    security_level = 128
-    poly_modulus_degree = 8192
-    coeff_modulus = 8192
-    plain_modulus = np.power(2, 10)
-    seal = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
+    seal = CythonWrapper(bstr("BFV"))
+    seal.set_poly_modulus_degree(8192)
+    seal.set_coeff_modulus(seal.default_params_coeff_modulus_128(8192))
+    seal.set_plain_modulus_for_bfv(np.power(2, 10))
+    seal.initiate_seal()
+
     print("\nExperiment 1: without relinearization \n")
     plain = seal.plaintext_create(bstr("1x^2 + 2x^1 + 3"), bstr('plain'))
     print('Encrypting plaintext: {}'.format(seal.plaintext_to_string(plain)))
@@ -84,7 +84,7 @@ def bfv_example_2():
     print("Fourth power result: {}".format(seal.plaintext_to_string(power4_result)))
     seal.clear_all_stored_pointers()
     print("\nExperiment 3, with relinearization of max dbc \n")
-    decomposition_bit_count = seal.relinearization_dbc_max()
+    decomposition_bit_count = seal.default_params_dbc_max()
     relinearization_key_size = 1
     seal.relinearization_generate_keys(decomposition_bit_count, relinearization_key_size)
     plain = seal.plaintext_create(bstr("1x^2 + 2x^1 + 3"), bstr('plain'))
@@ -120,13 +120,13 @@ def bfv_example_2():
 def bfv_example_3():
     np.set_printoptions(precision=3)
     print("===========Example: BFV Basics III===========")
-    scheme = bstr("BFV")
-    security_level = 128
-    poly_modulus_degree = 4096
-    coeff_modulus = 4096
-    plain_modulus = 40961
+    seal = CythonWrapper(bstr("BFV"))
+    seal.set_poly_modulus_degree(4096)
+    seal.set_coeff_modulus(seal.default_params_coeff_modulus_128(4096))
     # Note here, plain_modulues congruent to 1 mod 2*ploy_modulus_degree, thus batching is enabled
-    seal = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
+    seal.set_plain_modulus_for_bfv(40961)
+    seal.initiate_seal()
+
     print(f"Is batching enabled? {seal.batching_is_enabled()}")
     seal.batching_generate_galois_keys(30)
     seal.relinearization_generate_keys(30, 1)
@@ -185,17 +185,19 @@ def bfv_example_3():
 
 def bfv_example_4():
     print("===========Example: BFV Basics IV===========")
+    seal = CythonWrapper(bstr("BFV"))
+    seal.set_poly_modulus_degree(8192)
+    seal.set_coeff_modulus(seal.default_params_coeff_modulus_128(8192))
+    # Note here, plain_modulues congruent to 1 mod 2*ploy_modulus_degree, thus batching is enabled
+    seal.set_plain_modulus_for_bfv(np.power(2, 20))
+    seal.initiate_seal()
+
     # Introducing parms_id
-    scheme = bstr("BFV")
-    security_level = 128
-    poly_modulus_degree = 8192
-    coeff_modulus = 8192
-    plain_modulus = np.power(2, 20)
-    seal = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
     print(f"parms_id: {seal.get_parms_id_for_encryption_parameters()}")
     print("Changing plain_modulus ...")
     plain_modulus = np.power(2, 20) + 1
-    seal = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
+    seal.set_plain_modulus_for_bfv(np.power(2, 20) + 1)
+    seal.initiate_seal()
     print(f"parms_id: {seal.get_parms_id_for_encryption_parameters()}")
     print(f"parms_id of public key: {seal.get_parms_id_for_public_key()}")
     print(f"parms_id of secret key: {seal.get_parms_id_for_secret_key()}")
@@ -225,7 +227,7 @@ def bfv_example_4():
     print(f"Decryption: {seal.plaintext_to_string(decrypted_plaintext)}")
     seal.clear_all_stored_pointers()
     # A demo
-    seal.relinearization_generate_keys(seal.relinearization_dbc_max(), 1);
+    seal.relinearization_generate_keys(seal.default_params_dbc_max(), 1);
     plaintext = seal.plaintext_create(bstr("1x^3 + 2x^2 + 3x^1 + 4"), bstr("plaintext"))
     ciphertext = seal.encryptor_encrypt(plaintext, bstr("ciphertext"))
     print(f"Noise budget before squaring: {seal.decryptor_noise_budget(ciphertext)} bits")
@@ -252,101 +254,170 @@ def bfv_example_4():
 def ckks_example_1():
     np.set_printoptions(precision=3)
     print("===========Example: CKKS Basics I===========")
-    scheme = bstr("CKKS")
-    security_level = 128
-    poly_modulus_degree = 8192
-    coeff_modulus = 8192
-    plain_modulus = -1  # This variable is not used, this class should be better designed
-    wrapper = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
-    wrapper.relinearization_generate_keys(wrapper.relinearization_dbc_max(), 1)
-    wrapper.init_ckks_encoder()
+    seal = CythonWrapper(bstr("CKKS"))
+    seal.set_poly_modulus_degree(8192)
+    seal.set_coeff_modulus(seal.default_params_coeff_modulus_128(8192))
+    # Note here, plain_modulues congruent to 1 mod 2*ploy_modulus_degree, thus batching is enabled
+    seal.initiate_seal()
+
+    seal.relinearization_generate_keys(seal.default_params_dbc_max(), 1)
+    seal.init_ckks_encoder()
     input = np.array([0.0, 1.1, 2.2, 3.3], dtype=np.double)
     scale = np.power(2.0, 60).astype(np.double)
     print(scale)
     print(f"Input vector: {input}")
-    plaintext = wrapper.ckks_encoder(input, scale, bstr('plaintext'))
-    ciphertext = wrapper.encryptor_encrypt(plaintext, bstr('ciphertext'))
-    print(f"param_id of plaintext {wrapper.get_parms_id_for_plaintext(plaintext)}")
-    print(f"param_id of ciphertext {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
-    print(f"Scale in plaintext: {wrapper.get_scale_for_plaintext(plaintext)}")
-    print(f"Scale in ciphertext: {wrapper.get_scale_for_ciphertext(ciphertext)}")
-    wrapper.evaluator_square_inplace(ciphertext)
-    wrapper.evaluator_relinearize_inplace(ciphertext)
-    decrypted_plaintext = wrapper.decryptor_decrypt(ciphertext, bstr('decrypted_plaintext'))
-    print(f"Squared input: {wrapper.ckks_decoder(decrypted_plaintext, 4)}")
-    print(f"Scale in the square {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
-    print(f"Current parms id: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
-    wrapper.evaluator_mod_switch_to_next_inplace(ciphertext)
-    print(f"parms id after mod switching: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
-    decrypted_plaintext_after_switching = wrapper.decryptor_decrypt(ciphertext,
-                                                                    bstr('decrypted_plaintext_after_switching'))
-    print(f"Squared input: {wrapper.ckks_decoder(decrypted_plaintext_after_switching, 4)}")
+    plaintext = seal.ckks_encoder(input, scale, bstr('plaintext'))
+    ciphertext = seal.encryptor_encrypt(plaintext, bstr('ciphertext'))
+    print(f"param_id of plaintext {seal.get_parms_id_for_plaintext(plaintext)}")
+    print(f"param_id of ciphertext {seal.get_parms_id_for_ciphertext(ciphertext)}")
+    print(f"Scale in plaintext: {seal.get_scale_for_plaintext(plaintext)}")
+    print(f"Scale in ciphertext: {seal.get_scale_for_ciphertext(ciphertext)}")
+    seal.evaluator_square_inplace(ciphertext)
+    seal.evaluator_relinearize_inplace(ciphertext)
+    decrypted_plaintext = seal.decryptor_decrypt(ciphertext, bstr('decrypted_plaintext'))
+    print(f"Squared input: {seal.ckks_decoder(decrypted_plaintext, 4)}")
+    print(f"Scale in the square {np.log2(seal.get_scale_for_ciphertext(ciphertext))} bits")
+    print(f"Current parms id: {seal.get_parms_id_for_ciphertext(ciphertext)}")
+    seal.evaluator_mod_switch_to_next_inplace(ciphertext)
+    print(f"parms id after mod switching: {seal.get_parms_id_for_ciphertext(ciphertext)}")
+    decrypted_plaintext_after_switching = seal.decryptor_decrypt(ciphertext,
+                                                                 bstr('decrypted_plaintext_after_switching'))
+    print(f"Squared input: {seal.ckks_decoder(decrypted_plaintext_after_switching, 4)}")
     input2 = np.array([20.2, 30.3, 40.4, 50.5], dtype=np.double)
-    plaintext2 = wrapper.ckks_encoder_with_parms(
+    plaintext2 = seal.ckks_encoder_with_parms(
         input2,
-        wrapper.get_parms_id_for_ciphertext(ciphertext),
-        wrapper.get_scale_for_ciphertext(ciphertext),
+        seal.get_parms_id_for_ciphertext(ciphertext),
+        seal.get_scale_for_ciphertext(ciphertext),
         bstr('plaintext2')
     )
-    ciphertext2 = wrapper.encryptor_encrypt(plaintext2, bstr('ciphertext2'))
-    wrapper.evaluator_add_inplace(ciphertext, ciphertext2)
-    plaintext_sum = wrapper.decryptor_decrypt(ciphertext, bstr('plaintext_sum'))
-    print(f"Sum: {wrapper.ckks_decoder(plaintext_sum, 4)}")
+    ciphertext2 = seal.encryptor_encrypt(plaintext2, bstr('ciphertext2'))
+    seal.evaluator_add_inplace(ciphertext, ciphertext2)
+    plaintext_sum = seal.decryptor_decrypt(ciphertext, bstr('plaintext_sum'))
+    print(f"Sum: {seal.ckks_decoder(plaintext_sum, 4)}")
+    seal.clear_all_stored_pointers()
 
 
 def ckks_example_2():
     print("===========Example: CKKS Basics II===========")
     # Demonstrating the power of rescaling
-    scheme = bstr("CKKS")
-    security_level = 128
-    poly_modulus_degree = 8192
-    coeff_modulus = 8192
-    plain_modulus = -1  # This variable is not used, this class should be better designed
-    wrapper = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
-    wrapper.relinearization_generate_keys(wrapper.relinearization_dbc_max(), 1)
-    wrapper.init_ckks_encoder()
+    seal = CythonWrapper(bstr("CKKS"))
+    seal.set_poly_modulus_degree(8192)
+    seal.set_coeff_modulus(seal.default_params_coeff_modulus_128(8192))
+    # Note here, plain_modulues congruent to 1 mod 2*ploy_modulus_degree, thus batching is enabled
+    seal.initiate_seal()
+
+    seal.relinearization_generate_keys(seal.default_params_dbc_max(), 1)
+    seal.init_ckks_encoder()
     input = np.array([0.0, 1.1, 2.2, 3.3], dtype=np.double)
     print(f"Input vector {input}")
     scale = np.power(2, 60)
-    plaintext = wrapper.ckks_encoder(input, scale, bstr("plaintext"))
-    ciphertext = wrapper.encryptor_encrypt(plaintext, bstr("ciphertext"))
-    print(f"Chain index of (encryption parameters of) encrypted: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
-    print(f"Scale in ciphertext before squaring: {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
-    wrapper.evaluator_square_inplace(ciphertext)
-    wrapper.evaluator_relinearize_inplace(ciphertext)
-    print(f"Scale in encrypted after squaring: {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
+    plaintext = seal.ckks_encoder(input, scale, bstr("plaintext"))
+    ciphertext = seal.encryptor_encrypt(plaintext, bstr("ciphertext"))
+    print(f"Chain index of (encryption parameters of) encrypted: {seal.get_parms_id_for_ciphertext(ciphertext)}")
+    print(f"Scale in ciphertext before squaring: {np.log2(seal.get_scale_for_ciphertext(ciphertext))} bits")
+    seal.evaluator_square_inplace(ciphertext)
+    seal.evaluator_relinearize_inplace(ciphertext)
+    print(f"Scale in encrypted after squaring: {np.log2(seal.get_scale_for_ciphertext(ciphertext))} bits")
 
     print("Rescaling")
-    wrapper.evaluator_rescale_to_next_inplace(ciphertext)
-    parms_id = wrapper.get_parms_id_for_ciphertext(ciphertext)
+    seal.evaluator_rescale_to_next_inplace(ciphertext)
+    parms_id = seal.get_parms_id_for_ciphertext(ciphertext)
     print(f"Chain index of (encryption parameters of) encrypted: {parms_id}")
-    print(f"Scale in ciphertext before squaring: {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
-    print(f"Coeff_modulus size: {wrapper.get_total_coeff_modulus_bit_count(parms_id)} bits")
+    print(f"Scale in ciphertext before squaring: {np.log2(seal.get_scale_for_ciphertext(ciphertext))} bits")
+    print(f"Coeff_modulus size: {seal.get_total_coeff_modulus_bit_count(parms_id)} bits")
 
     print("Squaring and rescaling")
-    wrapper.evaluator_square_inplace(ciphertext)
-    wrapper.evaluator_relinearize_inplace(ciphertext)
-    wrapper.evaluator_rescale_to_next_inplace(ciphertext)
-    parms_id = wrapper.get_parms_id_for_ciphertext(ciphertext)
+    seal.evaluator_square_inplace(ciphertext)
+    seal.evaluator_relinearize_inplace(ciphertext)
+    seal.evaluator_rescale_to_next_inplace(ciphertext)
+    parms_id = seal.get_parms_id_for_ciphertext(ciphertext)
     print(f"Chain index of (encryption parameters of) encrypted: {parms_id}")
-    print(f"Scale in ciphertext before squaring: {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
-    print(f"Coeff_modulus size: {wrapper.get_total_coeff_modulus_bit_count(parms_id)} bits")
+    print(f"Scale in ciphertext before squaring: {np.log2(seal.get_scale_for_ciphertext(ciphertext))} bits")
+    print(f"Coeff_modulus size: {seal.get_total_coeff_modulus_bit_count(parms_id)} bits")
 
     print("Rescaling and squaring (no relinearization)")
-    wrapper.evaluator_rescale_to_next_inplace(ciphertext)
-    wrapper.evaluator_square_inplace(ciphertext)
-    parms_id = wrapper.get_parms_id_for_ciphertext(ciphertext)
+    seal.evaluator_rescale_to_next_inplace(ciphertext)
+    seal.evaluator_square_inplace(ciphertext)
+    parms_id = seal.get_parms_id_for_ciphertext(ciphertext)
     print(f"Chain index of (encryption parameters of) encrypted: {parms_id}")
-    print(f"Scale in ciphertext before squaring: {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
-    print(f"Coeff_modulus size: {wrapper.get_total_coeff_modulus_bit_count(parms_id)} bits")
+    print(f"Scale in ciphertext before squaring: {np.log2(seal.get_scale_for_ciphertext(ciphertext))} bits")
+    print(f"Coeff_modulus size: {seal.get_total_coeff_modulus_bit_count(parms_id)} bits")
 
-    decrypted_result = wrapper.decryptor_decrypt(ciphertext, bstr("decrypted_result"))
-    result = wrapper.ckks_decoder(decrypted_result, 4)
+    decrypted_result = seal.decryptor_decrypt(ciphertext, bstr("decrypted_result"))
+    result = seal.ckks_decoder(decrypted_result, 4)
     print(f"Precise result: {result}")
+    seal.clear_all_stored_pointers()
 
 
 def ckks_example_3():
-    pass
+    print("===========Example: CKKS Basics III===========")
+    np.set_printoptions(precision=3)
+    seal = CythonWrapper(bstr("CKKS"))
+    seal.set_poly_modulus_degree(8192)
+    seal.set_coeff_modulus(np.array([
+        seal.default_params_small_mods_40bit(0),
+        seal.default_params_small_mods_40bit(1),
+        seal.default_params_small_mods_40bit(2),
+        seal.default_params_small_mods_40bit(3)
+    ]))
+    seal.initiate_seal()
+    seal.init_ckks_encoder()
+    seal.relinearization_generate_keys(seal.default_params_dbc_max(), 1)
+    print(f"Number of slots: {seal.ckks_slot_count()}.")
+
+    input = np.array(np.arange(4096)/(4096-1))
+    print(f"Input vector: {input}, with size: {input.shape}")
+
+    print(f"Evaluating polynomial PI*x^3 + 0.4x + 1 ...")
+    scale = np.double(seal.default_params_small_mods_40bit(3))
+
+    plain_x = seal.ckks_encoder(input, scale, bstr('plain_x'))
+    encrypted_x1 = seal.encryptor_encrypt(plain_x, bstr('encrypted_x1'))
+
+    plain_coeff0 = seal.ckks_encoder(np.ones(4096) * 1.0, scale, bstr('plain_coeff0'))
+    plain_coeff1 = seal.ckks_encoder(np.ones(4096) * 0.4, scale, bstr('plain_coeff1'))
+    plain_coeff3 = seal.ckks_encoder(np.ones(4096) * 3.14159265, scale, bstr('plain_coeff3'))
+
+    encrypted_x3 = seal.evaluator_square(encrypted_x1, bstr('encrypted_x3'))
+    seal.evaluator_relinearize_inplace(encrypted_x3)
+    seal.evaluator_rescale_to_next_inplace(encrypted_x3)
+
+    encrypted_x1_coeff3 = seal.evaluator_multiply_plain(encrypted_x1, plain_coeff3, bstr('encrypted_x1_coeff3'))
+    seal.evaluator_rescale_to_next_inplace(encrypted_x1_coeff3)
+
+    seal.evaluator_multiply_inplace(encrypted_x3, encrypted_x1_coeff3)
+    seal.evaluator_relinearize_inplace(encrypted_x3)
+    seal.evaluator_rescale_to_next_inplace(encrypted_x3)
+
+    seal.evaluator_multiply_plain_inplace(encrypted_x1, plain_coeff1)
+    seal.evaluator_rescale_to_next_inplace(encrypted_x1)
+
+    print("Parameters used by all three terms are different:")
+
+    print(f"encrypted_x3 x3, modulus chain index: {seal.get_parms_index(seal.get_parms_id_for_ciphertext(encrypted_x3))}, scale: {np.log2(seal.get_scale_for_ciphertext(encrypted_x3))} bits")
+    print(f"encrypted_x1 x1, modulus chain index: {seal.get_parms_index(seal.get_parms_id_for_ciphertext(encrypted_x1))}, scale: {np.log2(seal.get_scale_for_ciphertext(encrypted_x1))} bits")
+    print(f"plain_coeff0, modulus chain index: {seal.get_parms_index(seal.get_parms_id_for_plaintext(plain_coeff0))}, scale: {np.log2(seal.get_scale_for_plaintext(plain_coeff0))} bits")
+
+    seal.set_scale_for_ciphertext(encrypted_x3, seal.get_scale_for_ciphertext(encrypted_x1))
+
+    seal.evaluator_mod_switch_to_inplace_ciphertext(encrypted_x1, seal.get_parms_id_for_ciphertext(encrypted_x3))
+    seal.evaluator_mod_switch_to_inplace_plaintext(plain_coeff0, seal.get_parms_id_for_ciphertext(encrypted_x3))
+
+    encrypted_result = seal.evaluator_add(encrypted_x3, encrypted_x1, bstr("encrypted_result"))
+    seal.evaluator_add_plain_inplace(encrypted_result, plain_coeff0)
+
+    print(f"encrypted_result, modulus chain index: {seal.get_parms_index(seal.get_parms_id_for_ciphertext(encrypted_result))}, scale: {np.log2(seal.get_scale_for_ciphertext(encrypted_result))} bits.")
+
+    plain_result = seal.decryptor_decrypt(encrypted_result, bstr("plain_result"))
+    result = seal.ckks_decoder(plain_result, 4096)
+    print(f"Result of PI*x^3 + 0.4x + 1: {result[0:10]}")
+
+    print(f"Current coeff_modulus size for encrypted_result {seal.get_total_coeff_modulus_bit_count(seal.get_parms_id_for_ciphertext(encrypted_result))}")
+
+
+
+
+# wrapper.clear_all_stored_pointers()
 
 def bfv_performance():
     print("===========BFV Performance Test===========")

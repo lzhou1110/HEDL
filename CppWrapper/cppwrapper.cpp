@@ -29,47 +29,57 @@ array<long unsigned int, 4> convert_parms_vector_to_array(vector<long unsigned i
     return result;
 }
 
+vector<SmallModulus> convert_values_to_small_mods(vector<uint64_t> values) {
+    std::vector<SmallModulus> result;
+    for (const auto& value : values) {
+        result.push_back(SmallModulus(value));
+    }
+    return result;
+}
+
+vector<uint64_t> convert_small_mods_to_values(vector<SmallModulus> small_mods) {
+    std::vector<uint64_t> result;
+    for (const auto& small_mod : small_mods) {
+        result.push_back(small_mod.value());
+    }
+    return result;
+}
+
 namespace wrapper {
 
     /* Constructor & Destructor */
     Wrapper::Wrapper () {}
 
-    Wrapper::Wrapper(
-        /*
-        Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (bits)
+    Wrapper::Wrapper(string scheme) {
+/*
+Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (bits)
 
-        - scheme
-            - Brakerski/Fan-Vercauteren (BFV) scheme (https://eprint.iacr.org/2012/144), with FullRNS optimization
-              (https://eprint.iacr.org/2016/510).
-            - Cheon-Kim-Kim-Song (CKKS) scheme (https://eprint.iacr.org/2016/421), with FullRNS optimization
-              (https://eprint.iacr.org/2018/931).
-        - poly_modulus_degree (degree of polynomial modulus)
-            - Must be a power of 2, representing the degree of a power-of-2 cyclotomic polynomial.
-            - Larger degree -> More secure, larger ciphertext sizes, slower operations.
-            - Recommended degrees are 1024, 2048, 4096, 8192, 16384, 32768
-        - coeff_modulus ([ciphertext] coefficient modulus) : size of the bit length of the product of primes
-            - Bigger coefficient -> More noise bugget, Lower security
-            - 128-bits and 192-bits already available, following Security Standard Draft http://HomomorphicEncryption.org
-            - Defaults:
-                DefaultParams::coeff_modulus_128(int)
-                DefaultParams::coeff_modulus_192(int)
-                DefaultParams::coeff_modulus_256(int)
-        - plain_modulus (plaintext modulus)
-            - any positive integer
-            - affects:
-                - size of the plaintext data type
-                - noise budget in freshly encrypted cyphertext
-                - consumption of noise budget in homomorphic (encrypted) multiplications
-        - noise_standard_deviation (default to 3.20, should not be necessary to modify unless there are specific reasons)
-        - random_generator
-        */
-        string scheme,
-        int security_level,
-        int poly_modulus_degree,
-        int coeff_modulus,
-        int plain_modulus
-    ) {
-        // Construct the corresponding encryption parameters based on scheme
+- scheme
+    - Brakerski/Fan-Vercauteren (BFV) scheme (https://eprint.iacr.org/2012/144), with FullRNS optimization
+      (https://eprint.iacr.org/2016/510).
+    - Cheon-Kim-Kim-Song (CKKS) scheme (https://eprint.iacr.org/2016/421), with FullRNS optimization
+      (https://eprint.iacr.org/2018/931).
+- poly_modulus_degree (degree of polynomial modulus)
+    - Must be a power of 2, representing the degree of a power-of-2 cyclotomic polynomial.
+    - Larger degree -> More secure, larger ciphertext sizes, slower operations.
+    - Recommended degrees are 1024, 2048, 4096, 8192, 16384, 32768
+- coeff_modulus ([ciphertext] coefficient modulus) : size of the bit length of the product of primes
+    - Bigger coefficient -> More noise bugget, Lower security
+    - 128-bits and 192-bits already available, following Security Standard Draft http://HomomorphicEncryption.org
+    - Defaults:
+        DefaultParams::coeff_modulus_128(int)
+        DefaultParams::coeff_modulus_192(int)
+        DefaultParams::coeff_modulus_256(int)
+- plain_modulus (plaintext modulus)
+    - any positive integer
+    - affects:
+        - size of the plaintext data type
+        - noise budget in freshly encrypted cyphertext
+        - consumption of noise budget in homomorphic (encrypted) multiplications
+- noise_standard_deviation (default to 3.20, should not be necessary to modify unless there are specific reasons)
+- random_generator
+*/
+        this->scheme = scheme;
         if (scheme == "BFV") {
             this->parms = new EncryptionParameters(scheme_type::BFV);
         } else if (scheme == "CKKS") {
@@ -77,26 +87,34 @@ namespace wrapper {
         } else {
             throw invalid_argument("unsupported scheme, choose among BFV, CKKS");
         }
+    }
 
+    Wrapper::~Wrapper () {}
+
+
+    /* Methods */
+    // set up
+    void Wrapper::set_coeff_modulus(vector<uint64_t> coeff_modulus) {
+        this->parms->set_coeff_modulus(convert_values_to_small_mods(coeff_modulus));
+    }
+
+    void Wrapper::set_poly_modulus_degree(int poly_modulus_degree) {
         this->parms->set_poly_modulus_degree(poly_modulus_degree);
+    }
 
-        if (security_level == 128) {
-            this->parms->set_coeff_modulus(DefaultParams::coeff_modulus_128(poly_modulus_degree));
-        } else if (security_level == 192) {
-            this->parms->set_coeff_modulus(DefaultParams::coeff_modulus_192(poly_modulus_degree));
-        } else if (security_level == 256) {
-            this->parms->set_coeff_modulus(DefaultParams::coeff_modulus_256(poly_modulus_degree));
-        } else {
-            throw invalid_argument("unsupported security level, choose among 128, 192, 256");
-        }
-
-        // CKKS does not use the plain modulus coefficient
-        if (scheme == "BFV") {
+    void Wrapper::set_plain_modulus_for_bfv(int plain_modulus) {
+        if (this->scheme == "BFV") {
             this->parms->set_plain_modulus(plain_modulus);
+        } else {
+            throw invalid_argument("Plain modulus is only supported in BFV");
         }
+    }
+
+    void Wrapper::initiate_seal() {
+        // Create context
         this->context = SEALContext::Create(*this->parms);
 
-        // Creating keys
+        // Create keys
         this->keygen = new KeyGenerator(context);
         this->public_key = this->keygen->public_key();
         this->secret_key = this->keygen->secret_key();
@@ -105,12 +123,27 @@ namespace wrapper {
         this->encryptor = new Encryptor(this->context, public_key);
         this->decryptor = new Decryptor(this->context, secret_key);
         this->evaluator = new Evaluator(this->context);
+
         print_info();
     }
 
-    Wrapper::~Wrapper () {}
+    // default
+    vector<uint64_t> Wrapper::default_params_coeff_modulus_128(size_t poly_modulus_degree) {
+        return convert_small_mods_to_values(DefaultParams::coeff_modulus_128(poly_modulus_degree));
+    }
 
-    /* Methods */
+    uint64_t Wrapper::default_params_small_mods_40bit(size_t index) {
+        return DefaultParams::small_mods_40bit(index).value();
+    }
+
+    int Wrapper::default_params_dbc_max() {
+        return DefaultParams::dbc_max();
+    }
+
+    int Wrapper::default_params_dbc_min() {
+        return DefaultParams::dbc_min();
+    }
+
     // context
     vector<size_t> Wrapper::context_chain_get_all_indexes() {
         vector<size_t> result;
@@ -177,6 +210,10 @@ namespace wrapper {
                 cout << dec << endl;
             }
         }
+    }
+
+    size_t Wrapper::get_parms_index(vector<long unsigned int> parms_id){
+        return this->context->context_data(convert_parms_vector_to_array(parms_id))->chain_index();
     }
 
     // pointers management
@@ -335,7 +372,39 @@ namespace wrapper {
         check_ciphertext_name_exist(ciphertext_name2);
         this->evaluator->multiply_inplace(
             get_ciphertext(ciphertext_name1),
-            get_ciphertext(ciphertext_name2));
+            get_ciphertext(ciphertext_name2)
+        );
+    }
+
+    string Wrapper::evaluator_multiply_plain(string ciphertext_name, string plaintext_name, string ciphertext_output_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        check_plaintext_name_exist(plaintext_name);
+        check_ciphertext_name_not_exist(ciphertext_output_name);
+        this->evaluator->multiply_plain(
+            get_ciphertext(ciphertext_name),
+            get_plaintext(plaintext_name),
+            this->ciphertext_map[ciphertext_output_name]
+        );
+        return ciphertext_output_name;
+    }
+
+    void Wrapper::evaluator_multiply_plain_inplace(string ciphertext_name, string plaintext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        check_plaintext_name_exist(plaintext_name);
+        this->evaluator->multiply_plain_inplace(
+            get_ciphertext(ciphertext_name),
+            get_plaintext(plaintext_name)
+        );
+    }
+
+    string Wrapper::evaluator_square(string ciphertext_input_name, string ciphertext_output_name) {
+        check_ciphertext_name_exist(ciphertext_input_name);
+        check_ciphertext_name_not_exist(ciphertext_output_name);
+        this->evaluator->square(
+            get_ciphertext(ciphertext_input_name),
+            this->ciphertext_map[ciphertext_output_name]
+        );
+        return ciphertext_output_name;
     }
 
     void Wrapper::evaluator_square_inplace(string ciphertext_name) {
@@ -352,6 +421,18 @@ namespace wrapper {
             get_plaintext(plaintext_name));
     }
 
+    string Wrapper::evaluator_add(string ciphertext_name1, string ciphertext_name2, string ciphertext_output_name) {
+        check_ciphertext_name_exist(ciphertext_name1);
+        check_ciphertext_name_exist(ciphertext_name2);
+        check_ciphertext_name_not_exist(ciphertext_output_name);
+        this->evaluator->add(
+            get_ciphertext(ciphertext_name1),
+            get_ciphertext(ciphertext_name2),
+            this->ciphertext_map[ciphertext_output_name]
+        );
+        return ciphertext_output_name;
+    }
+
     void Wrapper::evaluator_rotate_rows_inplace(string ciphertext_name, int steps) {
         check_ciphertext_name_exist(ciphertext_name);
         this->evaluator->rotate_rows_inplace(get_ciphertext(ciphertext_name), steps, this->galois_keys);
@@ -365,6 +446,22 @@ namespace wrapper {
     void Wrapper::evaluator_mod_switch_to_next_inplace(string ciphertext_name) {
         check_ciphertext_name_exist(ciphertext_name);
         this->evaluator->mod_switch_to_next_inplace(get_ciphertext(ciphertext_name));
+    }
+
+    void Wrapper::evaluator_mod_switch_to_inplace_ciphertext(string ciphertext_name, vector<long unsigned int> parms_id) {
+        check_ciphertext_name_exist(ciphertext_name);
+        this->evaluator->mod_switch_to_inplace(
+            get_ciphertext(ciphertext_name),
+            convert_parms_vector_to_array(parms_id)
+        );
+    }
+
+    void Wrapper::evaluator_mod_switch_to_inplace_plaintext(string plaintext_name, vector<long unsigned int> parms_id) {
+        check_plaintext_name_exist(plaintext_name);
+        this->evaluator->mod_switch_to_inplace(
+            get_plaintext(plaintext_name),
+            convert_parms_vector_to_array(parms_id)
+        );
     }
 
     void Wrapper::evaluator_rescale_to_next_inplace(string ciphertext_name) {
@@ -384,15 +481,6 @@ namespace wrapper {
         this->relinearize_keys = this->keygen->relin_keys(decomposition_bit_count, count);
     }
 
-    int Wrapper::relinearization_dbc_max() {
-        // Roughly 60
-        return DefaultParams::dbc_max();
-    }
-
-    int Wrapper::relinearization_dbc_min() {
-        // Roughly 1
-        return DefaultParams::dbc_min();
-    }
 
     // batching
     bool Wrapper::batching_is_enabled() {
@@ -418,6 +506,16 @@ namespace wrapper {
     double Wrapper::get_scale_for_ciphertext(string ciphertext_name) {
         check_ciphertext_name_exist(ciphertext_name);
         return get_ciphertext(ciphertext_name).scale();
+    }
+
+    void Wrapper::set_scale_for_plaintext(string plaintext_name, double scale) {
+        check_plaintext_name_exist(plaintext_name);
+        get_plaintext(plaintext_name).scale() = scale;
+    }
+
+    void Wrapper::set_scale_for_ciphertext(string ciphertext_name, double scale) {
+        check_ciphertext_name_exist(ciphertext_name);
+        get_ciphertext(ciphertext_name).scale() = scale;
     }
 
     /* Private Methods */

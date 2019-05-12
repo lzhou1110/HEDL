@@ -50,7 +50,6 @@ RUN make install
 WORKDIR /
 RUN pip3 install Cython==0.28.5
 RUN pip3 install numpy==1.16.3
-RUN pip3 install multipledispatch
 
 ADD CppWrapper/. /app/CppWrapper
 WORKDIR /app/CppWrapper
