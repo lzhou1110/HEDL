@@ -138,23 +138,6 @@ namespace wrapper {
         return result;
     }
 
-    void Wrapper::context_chain_print_coeff_modulus_primes_at_index(size_t index) {
-        for (
-            auto context_data = this->context->context_data();
-            context_data;
-            context_data = context_data->next_context_data()
-        ) {
-            if (index == context_data->chain_index()) {
-                cout << "coeff_modulus primes: ";
-                cout << hex;
-                for(const auto &prime : context_data->parms().coeff_modulus()) {
-                    cout << prime.value() << " ";
-                }
-                cout << dec << endl;
-            }
-        }
-    }
-
     vector<long unsigned int> Wrapper::get_parms_id_for_encryption_parameters() {
         return convert_parms_array_to_vector(this->parms->parms_id());
     }
@@ -173,6 +156,27 @@ namespace wrapper {
 
     vector<long unsigned int> Wrapper::get_parms_id_for_ciphertext(string ciphertext_name) {
         return convert_parms_array_to_vector(get_ciphertext(ciphertext_name).parms_id());
+    }
+
+    int Wrapper::get_total_coeff_modulus_bit_count(vector<long unsigned int> parms_id) {
+        return this->context->context_data(convert_parms_vector_to_array(parms_id))->total_coeff_modulus_bit_count();
+    }
+
+    void Wrapper::context_chain_print_coeff_modulus_primes_at_index(size_t index) {
+        for (
+            auto context_data = this->context->context_data();
+            context_data;
+            context_data = context_data->next_context_data()
+        ) {
+            if (index == context_data->chain_index()) {
+                cout << "coeff_modulus primes: ";
+                cout << hex;
+                for(const auto &prime : context_data->parms().coeff_modulus()) {
+                    cout << prime.value() << " ";
+                }
+                cout << dec << endl;
+            }
+        }
     }
 
     // pointers management
@@ -282,6 +286,10 @@ namespace wrapper {
         return result;
     }
 
+    size_t Wrapper::ckks_slot_count() {
+        return this -> ckksEncoder -> slot_count();
+    }
+
     // encrypt & decrypt
     int Wrapper::decryptor_noise_budget(string ciphertext_name) {
         Ciphertext ciphertext = get_ciphertext(ciphertext_name);
@@ -357,6 +365,11 @@ namespace wrapper {
     void Wrapper::evaluator_mod_switch_to_next_inplace(string ciphertext_name) {
         check_ciphertext_name_exist(ciphertext_name);
         this->evaluator->mod_switch_to_next_inplace(get_ciphertext(ciphertext_name));
+    }
+
+    void Wrapper::evaluator_rescale_to_next_inplace(string ciphertext_name) {
+        check_ciphertext_name_exist(ciphertext_name);
+        this->evaluator->rescale_to_next_inplace(get_ciphertext(ciphertext_name));
     }
 
     // relinearization
@@ -502,42 +515,6 @@ namespace wrapper {
     Ciphertext& Wrapper::get_ciphertext(string ciphertext_name) {
         check_ciphertext_name_exist(ciphertext_name);
         return this->ciphertext_map[ciphertext_name];
-    }
-
-    void Wrapper::print_matrix(vector<uint64_t> pod_matrix) {
-        size_t row_size = this->batching_row_count;
-        auto print_matrix = [row_size](auto &matrix) {
-            cout << endl;
-
-            /*
-            We're not going to print every column of the matrix (there are 2048). Instead
-            print this many slots from beginning and end of the matrix.
-            */
-            size_t print_size = 5;
-
-            cout << "    [";
-            for (size_t i = 0; i < print_size; i++)
-            {
-                cout << setw(3) << matrix[i] << ",";
-            }
-            cout << setw(3) << " ...,";
-            for (size_t i = row_size - print_size; i < row_size; i++)
-            {
-                cout << setw(3) << matrix[i] << ((i != row_size - 1) ? "," : " ]\n");
-            }
-            cout << "    [";
-            for (size_t i = row_size; i < row_size + print_size; i++)
-            {
-                cout << setw(3) << matrix[i] << ",";
-            }
-            cout << setw(3) << " ...,";
-            for (size_t i = 2 * row_size - print_size; i < 2 * row_size; i++)
-            {
-                cout << setw(3) << matrix[i] << ((i != 2 * row_size - 1) ? "," : " ]\n");
-            }
-            cout << endl;
-        };
-        print_matrix(pod_matrix);
     }
 }
 

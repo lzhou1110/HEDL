@@ -13,6 +13,14 @@ extensions = [
         language="c++",
         extra_compile_args=["-std=c++17", "-O3", "-DHAVE_CONFIG_H"]
     ),
+    Extension(
+        "CythonWrapper.cythonperformance",
+        ["CythonWrapper/cythonperformance.pyx"],
+        include_dirs=seal_dirs,
+        libraries=["seal"],
+        language="c++",
+        extra_compile_args=["-std=c++17", "-O3", "-DHAVE_CONFIG_H"]
+    ),
 ]
 
 setup(

@@ -12,15 +12,15 @@ cdef class CythonWrapper:
                   int plain_modulus):
         self.wrapper = Wrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
 
+    # def __cinit__(self):
+    #     self.wrapper = Wrapper()
+
     # context
     def context_chain_get_all_indexes(self):
         return self.wrapper.context_chain_get_all_indexes()
 
     def context_chain_get_parms_id_at_index(self, int index):
         return self.wrapper.context_chain_get_parms_id_at_index(index)
-
-    def context_chain_print_coeff_modulus_primes_at_index(self, int index):
-        return self.wrapper.context_chain_print_coeff_modulus_primes_at_index(index)
 
     def get_parms_id_for_encryption_parameters(self):
         return self.wrapper.get_parms_id_for_encryption_parameters()
@@ -36,6 +36,12 @@ cdef class CythonWrapper:
 
     def get_parms_id_for_ciphertext(self, string ciphertext_name):
         return self.wrapper.get_parms_id_for_ciphertext(ciphertext_name)
+
+    def context_chain_print_coeff_modulus_primes_at_index(self, int index):
+        return self.wrapper.context_chain_print_coeff_modulus_primes_at_index(index)
+
+    def get_total_coeff_modulus_bit_count(self, vector[long unsigned int] parms_id):
+        return self.wrapper.get_total_coeff_modulus_bit_count(parms_id)
 
     # pointer management
     def clear_all_stored_pointers(self):
@@ -91,6 +97,9 @@ cdef class CythonWrapper:
     def ckks_decoder(self, string plaintext_name, int size):
         return self.wrapper.ckks_decoder(plaintext_name, size)
 
+    def ckks_slot_count(self):
+        return self.wrapper.ckks_slot_count()
+
     # encrypt & decrypt
     def decryptor_noise_budget(self, string ciphertext_name):
         return self.wrapper.decryptor_noise_budget(ciphertext_name)
@@ -128,6 +137,9 @@ cdef class CythonWrapper:
 
     def evaluator_mod_switch_to_next_inplace(self, string ciphertext_name):
         self.wrapper.evaluator_mod_switch_to_next_inplace(ciphertext_name)
+
+    def evaluator_rescale_to_next_inplace(self, string ciphertext_name):
+        self.wrapper.evaluator_rescale_to_next_inplace(ciphertext_name)
 
     # relinearization
     def relinearization_generate_keys(self, int decomposition_bit_count, int count):

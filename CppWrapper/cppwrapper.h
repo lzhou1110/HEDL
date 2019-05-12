@@ -24,12 +24,13 @@ namespace wrapper {
             // context
             vector<size_t> context_chain_get_all_indexes();
             vector<long unsigned int> context_chain_get_parms_id_at_index(size_t index);
-            void context_chain_print_coeff_modulus_primes_at_index(size_t index);
             vector<long unsigned int> get_parms_id_for_encryption_parameters();
             vector<long unsigned int> get_parms_id_for_public_key();
             vector<long unsigned int> get_parms_id_for_secret_key();
             vector<long unsigned int> get_parms_id_for_plaintext(string plaintext_name);
             vector<long unsigned int> get_parms_id_for_ciphertext(string ciphertext_name);
+            void context_chain_print_coeff_modulus_primes_at_index(size_t index);
+            int get_total_coeff_modulus_bit_count(vector<long unsigned int> parms_id);
             // pointers management
             void clear_all_stored_pointers();
             void clear_plaintext(string plaintext_name);
@@ -56,6 +57,7 @@ namespace wrapper {
                 double scale, string plaintext_name
             );
             vector<double> ckks_decoder(string plaintext_name, int size);
+            size_t ckks_slot_count();
             // encrypt & decrypt
             int decryptor_noise_budget(string ciphertext_name);
             string encryptor_encrypt(string plaintext_name, string ciphertext_name);
@@ -70,6 +72,7 @@ namespace wrapper {
             void evaluator_rotate_rows_inplace(string ciphertext_name, int steps);
             void evaluator_rotate_columns_inplace(string ciphertext_name);
             void evaluator_mod_switch_to_next_inplace(string ciphertext_name);
+            void evaluator_rescale_to_next_inplace(string ciphertext_name);
             // relinearization
             void relinearization_generate_keys(int decomposition_bit_count, size_t count);
             int relinearization_dbc_max();
@@ -80,6 +83,7 @@ namespace wrapper {
             // ckks
             double get_scale_for_plaintext(string plaintext_name);
             double get_scale_for_ciphertext(string ciphertext_name);
+
 
         private:
             /* Members */

@@ -20,12 +20,13 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
         # context
         vector[size_t] context_chain_get_all_indexes() except +
         vector[long unsigned int] context_chain_get_parms_id_at_index(size_t index) except +
-        void context_chain_print_coeff_modulus_primes_at_index(size_t index) except +
-        vector[long unsigned int] get_parms_id_for_encryption_parameters()
-        vector[long unsigned int] get_parms_id_for_public_key()
-        vector[long unsigned int] get_parms_id_for_secret_key()
+        vector[long unsigned int] get_parms_id_for_encryption_parameters() except +
+        vector[long unsigned int] get_parms_id_for_public_key() except +
+        vector[long unsigned int] get_parms_id_for_secret_key() except +
         vector[long unsigned int] get_parms_id_for_plaintext(string plaintext_name) except +
         vector[long unsigned int] get_parms_id_for_ciphertext(string ciphertext_name) except +
+        void context_chain_print_coeff_modulus_primes_at_index(size_t index) except +
+        int get_total_coeff_modulus_bit_count(vector[long unsigned int] parms_id) except +
 
         # pointers management
         void clear_all_stored_pointers() except +
@@ -59,6 +60,7 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
             string plaintext_name
         ) except +
         vector[double] ckks_decoder(string plaintext_name, int size) except +
+        size_t ckks_slot_count() except +
 
         # encrypt & decrypt
         int decryptor_noise_budget(string ciphertext_name) except +
@@ -75,6 +77,7 @@ cdef extern from "cppwrapper.h" namespace "wrapper":
         void evaluator_rotate_rows_inplace(string ciphertext_name, int steps) except +
         void evaluator_rotate_columns_inplace(string ciphertext_name) except +
         void evaluator_mod_switch_to_next_inplace(string ciphertext_name) except +
+        void evaluator_rescale_to_next_inplace(string ciphertext_name) except +
 
         # relinearization
         void relinearization_generate_keys(int decomposition_bit_count, size_t count) except +

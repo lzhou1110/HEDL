@@ -1,4 +1,5 @@
 from CythonWrapper.cythonwrapper import CythonWrapper
+from CythonWrapper.cythonperformance import CythonPerformance
 import numpy as np
 from utils import bstr
 
@@ -255,7 +256,7 @@ def ckks_example_1():
     security_level = 128
     poly_modulus_degree = 8192
     coeff_modulus = 8192
-    plain_modulus = -1 # This variable is not used, this class should be better designed
+    plain_modulus = -1  # This variable is not used, this class should be better designed
     wrapper = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
     wrapper.relinearization_generate_keys(wrapper.relinearization_dbc_max(), 1)
     wrapper.init_ckks_encoder()
@@ -277,7 +278,8 @@ def ckks_example_1():
     print(f"Current parms id: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
     wrapper.evaluator_mod_switch_to_next_inplace(ciphertext)
     print(f"parms id after mod switching: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
-    decrypted_plaintext_after_switching = wrapper.decryptor_decrypt(ciphertext, bstr('decrypted_plaintext_after_switching'))
+    decrypted_plaintext_after_switching = wrapper.decryptor_decrypt(ciphertext,
+                                                                    bstr('decrypted_plaintext_after_switching'))
     print(f"Squared input: {wrapper.ckks_decoder(decrypted_plaintext_after_switching, 4)}")
     input2 = np.array([20.2, 30.3, 40.4, 50.5], dtype=np.double)
     plaintext2 = wrapper.ckks_encoder_with_parms(
@@ -293,16 +295,66 @@ def ckks_example_1():
 
 
 def ckks_example_2():
-    pass
+    print("===========Example: CKKS Basics II===========")
+    # Demonstrating the power of rescaling
+    scheme = bstr("CKKS")
+    security_level = 128
+    poly_modulus_degree = 8192
+    coeff_modulus = 8192
+    plain_modulus = -1  # This variable is not used, this class should be better designed
+    wrapper = CythonWrapper(scheme, security_level, poly_modulus_degree, coeff_modulus, plain_modulus)
+    wrapper.relinearization_generate_keys(wrapper.relinearization_dbc_max(), 1)
+    wrapper.init_ckks_encoder()
+    input = np.array([0.0, 1.1, 2.2, 3.3], dtype=np.double)
+    print(f"Input vector {input}")
+    scale = np.power(2, 60)
+    plaintext = wrapper.ckks_encoder(input, scale, bstr("plaintext"))
+    ciphertext = wrapper.encryptor_encrypt(plaintext, bstr("ciphertext"))
+    print(f"Chain index of (encryption parameters of) encrypted: {wrapper.get_parms_id_for_ciphertext(ciphertext)}")
+    print(f"Scale in ciphertext before squaring: {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
+    wrapper.evaluator_square_inplace(ciphertext)
+    wrapper.evaluator_relinearize_inplace(ciphertext)
+    print(f"Scale in encrypted after squaring: {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
+
+    print("Rescaling")
+    wrapper.evaluator_rescale_to_next_inplace(ciphertext)
+    parms_id = wrapper.get_parms_id_for_ciphertext(ciphertext)
+    print(f"Chain index of (encryption parameters of) encrypted: {parms_id}")
+    print(f"Scale in ciphertext before squaring: {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
+    print(f"Coeff_modulus size: {wrapper.get_total_coeff_modulus_bit_count(parms_id)} bits")
+
+    print("Squaring and rescaling")
+    wrapper.evaluator_square_inplace(ciphertext)
+    wrapper.evaluator_relinearize_inplace(ciphertext)
+    wrapper.evaluator_rescale_to_next_inplace(ciphertext)
+    parms_id = wrapper.get_parms_id_for_ciphertext(ciphertext)
+    print(f"Chain index of (encryption parameters of) encrypted: {parms_id}")
+    print(f"Scale in ciphertext before squaring: {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
+    print(f"Coeff_modulus size: {wrapper.get_total_coeff_modulus_bit_count(parms_id)} bits")
+
+    print("Rescaling and squaring (no relinearization)")
+    wrapper.evaluator_rescale_to_next_inplace(ciphertext)
+    wrapper.evaluator_square_inplace(ciphertext)
+    parms_id = wrapper.get_parms_id_for_ciphertext(ciphertext)
+    print(f"Chain index of (encryption parameters of) encrypted: {parms_id}")
+    print(f"Scale in ciphertext before squaring: {np.log2(wrapper.get_scale_for_ciphertext(ciphertext))} bits")
+    print(f"Coeff_modulus size: {wrapper.get_total_coeff_modulus_bit_count(parms_id)} bits")
+
+    decrypted_result = wrapper.decryptor_decrypt(ciphertext, bstr("decrypted_result"))
+    result = wrapper.ckks_decoder(decrypted_result, 4)
+    print(f"Precise result: {result}")
 
 
 def ckks_example_3():
     pass
 
-
 def bfv_performance():
-    pass
+    print("===========BFV Performance Test===========")
+    performance = CythonPerformance()
+    performance.run_bfv_performance_test()
 
 
 def ckks_performance():
-    pass
+    print("===========CKKS Performance Test===========")
+    performance = CythonPerformance()
+    performance.run_ckks_performance_test()
