@@ -17,68 +17,40 @@
 using namespace std;
 using namespace seal;
 
-// Helper functions
-vector<long unsigned int> convert_parms_array_to_vector(array<long unsigned int, 4> parms_id) {
-    std::vector<long unsigned int> result(std::begin(parms_id), std::end(parms_id));
-    return result;
-}
-
-array<long unsigned int, 4> convert_parms_vector_to_array(vector<long unsigned int> parms_id) {
-    array<long unsigned int, 4> result;
-    copy_n(std::make_move_iterator(parms_id.begin()), 4, result.begin());
-    return result;
-}
-
-vector<SmallModulus> convert_values_to_small_mods(vector<uint64_t> values) {
-    std::vector<SmallModulus> result;
-    for (const auto& value : values) {
-        result.push_back(SmallModulus(value));
-    }
-    return result;
-}
-
-vector<uint64_t> convert_small_mods_to_values(vector<SmallModulus> small_mods) {
-    std::vector<uint64_t> result;
-    for (const auto& small_mod : small_mods) {
-        result.push_back(small_mod.value());
-    }
-    return result;
-}
-
 namespace wrapper {
 
+    // Helper functions
+    vector<long unsigned int> convert_parms_array_to_vector(array<long unsigned int, 4> parms_id) {
+        std::vector<long unsigned int> result(std::begin(parms_id), std::end(parms_id));
+        return result;
+    }
+
+    array<long unsigned int, 4> convert_parms_vector_to_array(vector<long unsigned int> parms_id) {
+        array<long unsigned int, 4> result;
+        copy_n(std::make_move_iterator(parms_id.begin()), 4, result.begin());
+        return result;
+    }
+
+    vector <SmallModulus> convert_values_to_small_mods(vector <uint64_t> values) {
+        std::vector <SmallModulus> result;
+        for (const auto &value : values) {
+            result.push_back(SmallModulus(value));
+        }
+        return result;
+    }
+
+    vector <uint64_t> convert_small_mods_to_values(vector <SmallModulus> small_mods) {
+        std::vector <uint64_t> result;
+        for (const auto &small_mod : small_mods) {
+            result.push_back(small_mod.value());
+        }
+        return result;
+    }
+
     /* Constructor & Destructor */
-    Wrapper::Wrapper () {}
+    Wrapper::Wrapper() {}
 
     Wrapper::Wrapper(string scheme) {
-/*
-Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (bits)
-
-- scheme
-    - Brakerski/Fan-Vercauteren (BFV) scheme (https://eprint.iacr.org/2012/144), with FullRNS optimization
-      (https://eprint.iacr.org/2016/510).
-    - Cheon-Kim-Kim-Song (CKKS) scheme (https://eprint.iacr.org/2016/421), with FullRNS optimization
-      (https://eprint.iacr.org/2018/931).
-- poly_modulus_degree (degree of polynomial modulus)
-    - Must be a power of 2, representing the degree of a power-of-2 cyclotomic polynomial.
-    - Larger degree -> More secure, larger ciphertext sizes, slower operations.
-    - Recommended degrees are 1024, 2048, 4096, 8192, 16384, 32768
-- coeff_modulus ([ciphertext] coefficient modulus) : size of the bit length of the product of primes
-    - Bigger coefficient -> More noise bugget, Lower security
-    - 128-bits and 192-bits already available, following Security Standard Draft http://HomomorphicEncryption.org
-    - Defaults:
-        DefaultParams::coeff_modulus_128(int)
-        DefaultParams::coeff_modulus_192(int)
-        DefaultParams::coeff_modulus_256(int)
-- plain_modulus (plaintext modulus)
-    - any positive integer
-    - affects:
-        - size of the plaintext data type
-        - noise budget in freshly encrypted cyphertext
-        - consumption of noise budget in homomorphic (encrypted) multiplications
-- noise_standard_deviation (default to 3.20, should not be necessary to modify unless there are specific reasons)
-- random_generator
-*/
         this->scheme = scheme;
         if (scheme == "BFV") {
             this->parms = new EncryptionParameters(scheme_type::BFV);
@@ -89,12 +61,12 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         }
     }
 
-    Wrapper::~Wrapper () {}
+    Wrapper::~Wrapper() {}
 
 
     /* Methods */
     // set up
-    void Wrapper::set_coeff_modulus(vector<uint64_t> coeff_modulus) {
+    void Wrapper::set_coeff_modulus(vector <uint64_t> coeff_modulus) {
         this->parms->set_coeff_modulus(convert_values_to_small_mods(coeff_modulus));
     }
 
@@ -128,7 +100,7 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
     }
 
     // default
-    vector<uint64_t> Wrapper::default_params_coeff_modulus_128(size_t poly_modulus_degree) {
+    vector <uint64_t> Wrapper::default_params_coeff_modulus_128(size_t poly_modulus_degree) {
         return convert_small_mods_to_values(DefaultParams::coeff_modulus_128(poly_modulus_degree));
     }
 
@@ -145,13 +117,13 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
     }
 
     // context
-    vector<size_t> Wrapper::context_chain_get_all_indexes() {
-        vector<size_t> result;
+    vector <size_t> Wrapper::context_chain_get_all_indexes() {
+        vector <size_t> result;
         for (
-            auto context_data = this->context->context_data();
-            context_data;
-            context_data = context_data->next_context_data()
-        ) {
+                auto context_data = this->context->context_data();
+                context_data;
+                context_data = context_data->next_context_data()
+                ) {
             result.push_back(context_data->chain_index());
         }
         return result;
@@ -160,10 +132,10 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
     vector<long unsigned int> Wrapper::context_chain_get_parms_id_at_index(size_t index) {
         vector<long unsigned int> result;
         for (
-            auto context_data = this->context->context_data();
-            context_data;
-            context_data = context_data->next_context_data()
-        ) {
+                auto context_data = this->context->context_data();
+                context_data;
+                context_data = context_data->next_context_data()
+                ) {
             if (index == context_data->chain_index()) {
                 result = convert_parms_array_to_vector(context_data->parms().parms_id());
             }
@@ -197,14 +169,14 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
 
     void Wrapper::context_chain_print_coeff_modulus_primes_at_index(size_t index) {
         for (
-            auto context_data = this->context->context_data();
-            context_data;
-            context_data = context_data->next_context_data()
-        ) {
+                auto context_data = this->context->context_data();
+                context_data;
+                context_data = context_data->next_context_data()
+                ) {
             if (index == context_data->chain_index()) {
                 cout << "coeff_modulus primes: ";
                 cout << hex;
-                for(const auto &prime : context_data->parms().coeff_modulus()) {
+                for (const auto &prime : context_data->parms().coeff_modulus()) {
                     cout << prime.value() << " ";
                 }
                 cout << dec << endl;
@@ -212,7 +184,7 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         }
     }
 
-    size_t Wrapper::get_parms_index(vector<long unsigned int> parms_id){
+    size_t Wrapper::get_parms_index(vector<long unsigned int> parms_id) {
         return this->context->context_data(convert_parms_vector_to_array(parms_id))->chain_index();
     }
 
@@ -227,7 +199,7 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         this->ciphertext_map.erase(plaintext_name);
     }
 
-    void Wrapper::clear_ciphertext(string ciphertext_name){
+    void Wrapper::clear_ciphertext(string ciphertext_name) {
         check_ciphertext_name_exist(ciphertext_name);
         this->ciphertext_map.erase(ciphertext_name);
     }
@@ -277,14 +249,14 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         cout << "Plaintext matrix row size: " << this->batching_row_count << endl;
     }
 
-    string Wrapper::batch_encoder(vector<uint64_t> pod_matrix, string plaintext_name) {
+    string Wrapper::batch_encoder(vector <uint64_t> pod_matrix, string plaintext_name) {
         check_plaintext_name_not_exist(plaintext_name);
         this->batchEncoder->encode(pod_matrix, this->plaintext_map[plaintext_name]);
         return plaintext_name;
     }
 
-    vector<uint64_t> Wrapper::batch_decoder(string plaintext_name) {
-        vector<uint64_t> pod_result;
+    vector <uint64_t> Wrapper::batch_decoder(string plaintext_name) {
+        vector <uint64_t> pod_result;
         check_plaintext_name_exist(plaintext_name);
         this->batchEncoder->decode(get_plaintext(plaintext_name), pod_result);
         return pod_result;
@@ -293,38 +265,38 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
     // ckks encoder
     void Wrapper::init_ckks_encoder() {
         cout << "Initialising ckks encoder" << endl;
-        this -> ckksEncoder = new CKKSEncoder(this->context);
-        cout << "Slot count: " << this -> ckksEncoder -> slot_count() << endl;
+        this->ckksEncoder = new CKKSEncoder(this->context);
+        cout << "Slot count: " << this->ckksEncoder->slot_count() << endl;
     }
 
     string Wrapper::ckks_encoder(vector<double> input, double scale, string plaintext_name) {
         check_plaintext_name_not_exist(plaintext_name);
-        this -> ckksEncoder -> encode(input, scale, this->plaintext_map[plaintext_name]);
+        this->ckksEncoder->encode(input, scale, this->plaintext_map[plaintext_name]);
         return plaintext_name;
     }
 
     string Wrapper::ckks_encoder(
-        vector<double> input,
-        vector<long unsigned int> parms_id,
-        double scale,
-        string plaintext_name
+            vector<double> input,
+            vector<long unsigned int> parms_id,
+            double scale,
+            string plaintext_name
     ) {
         check_plaintext_name_not_exist(plaintext_name);
         array<long unsigned int, 4> parms_array = convert_parms_vector_to_array(parms_id);
-        this -> ckksEncoder -> encode(input, parms_array, scale, this->plaintext_map[plaintext_name]);
+        this->ckksEncoder->encode(input, parms_array, scale, this->plaintext_map[plaintext_name]);
         return plaintext_name;
     }
 
     vector<double> Wrapper::ckks_decoder(string plaintext_name, int size) {
         vector<double> result;
         check_plaintext_name_exist(plaintext_name);
-        this -> ckksEncoder -> decode(get_plaintext(plaintext_name), result);
+        this->ckksEncoder->decode(get_plaintext(plaintext_name), result);
         result.resize(size);
         return result;
     }
 
     size_t Wrapper::ckks_slot_count() {
-        return this -> ckksEncoder -> slot_count();
+        return this->ckksEncoder->slot_count();
     }
 
     // encrypt & decrypt
@@ -363,27 +335,28 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         check_ciphertext_name_exist(ciphertext_name2);
         cout << "passed checking" << endl;
         this->evaluator->add_inplace(
-            get_ciphertext(ciphertext_name1),
-            get_ciphertext(ciphertext_name2));
+                get_ciphertext(ciphertext_name1),
+                get_ciphertext(ciphertext_name2));
     }
 
     void Wrapper::evaluator_multiply_inplace(string ciphertext_name1, string ciphertext_name2) {
         check_ciphertext_name_exist(ciphertext_name1);
         check_ciphertext_name_exist(ciphertext_name2);
         this->evaluator->multiply_inplace(
-            get_ciphertext(ciphertext_name1),
-            get_ciphertext(ciphertext_name2)
+                get_ciphertext(ciphertext_name1),
+                get_ciphertext(ciphertext_name2)
         );
     }
 
-    string Wrapper::evaluator_multiply_plain(string ciphertext_name, string plaintext_name, string ciphertext_output_name) {
+    string
+    Wrapper::evaluator_multiply_plain(string ciphertext_name, string plaintext_name, string ciphertext_output_name) {
         check_ciphertext_name_exist(ciphertext_name);
         check_plaintext_name_exist(plaintext_name);
         check_ciphertext_name_not_exist(ciphertext_output_name);
         this->evaluator->multiply_plain(
-            get_ciphertext(ciphertext_name),
-            get_plaintext(plaintext_name),
-            this->ciphertext_map[ciphertext_output_name]
+                get_ciphertext(ciphertext_name),
+                get_plaintext(plaintext_name),
+                this->ciphertext_map[ciphertext_output_name]
         );
         return ciphertext_output_name;
     }
@@ -392,8 +365,8 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         check_ciphertext_name_exist(ciphertext_name);
         check_plaintext_name_exist(plaintext_name);
         this->evaluator->multiply_plain_inplace(
-            get_ciphertext(ciphertext_name),
-            get_plaintext(plaintext_name)
+                get_ciphertext(ciphertext_name),
+                get_plaintext(plaintext_name)
         );
     }
 
@@ -401,8 +374,8 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         check_ciphertext_name_exist(ciphertext_input_name);
         check_ciphertext_name_not_exist(ciphertext_output_name);
         this->evaluator->square(
-            get_ciphertext(ciphertext_input_name),
-            this->ciphertext_map[ciphertext_output_name]
+                get_ciphertext(ciphertext_input_name),
+                this->ciphertext_map[ciphertext_output_name]
         );
         return ciphertext_output_name;
     }
@@ -410,15 +383,15 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
     void Wrapper::evaluator_square_inplace(string ciphertext_name) {
         check_ciphertext_name_exist(ciphertext_name);
         this->evaluator->square_inplace(
-            get_ciphertext(ciphertext_name));
+                get_ciphertext(ciphertext_name));
     }
 
     void Wrapper::evaluator_add_plain_inplace(string ciphertext_name, string plaintext_name) {
         check_ciphertext_name_exist(ciphertext_name);
         check_plaintext_name_exist(plaintext_name);
         this->evaluator->add_plain_inplace(
-            get_ciphertext(ciphertext_name),
-            get_plaintext(plaintext_name));
+                get_ciphertext(ciphertext_name),
+                get_plaintext(plaintext_name));
     }
 
     string Wrapper::evaluator_add(string ciphertext_name1, string ciphertext_name2, string ciphertext_output_name) {
@@ -426,9 +399,9 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         check_ciphertext_name_exist(ciphertext_name2);
         check_ciphertext_name_not_exist(ciphertext_output_name);
         this->evaluator->add(
-            get_ciphertext(ciphertext_name1),
-            get_ciphertext(ciphertext_name2),
-            this->ciphertext_map[ciphertext_output_name]
+                get_ciphertext(ciphertext_name1),
+                get_ciphertext(ciphertext_name2),
+                this->ciphertext_map[ciphertext_output_name]
         );
         return ciphertext_output_name;
     }
@@ -448,19 +421,20 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         this->evaluator->mod_switch_to_next_inplace(get_ciphertext(ciphertext_name));
     }
 
-    void Wrapper::evaluator_mod_switch_to_inplace_ciphertext(string ciphertext_name, vector<long unsigned int> parms_id) {
+    void
+    Wrapper::evaluator_mod_switch_to_inplace_ciphertext(string ciphertext_name, vector<long unsigned int> parms_id) {
         check_ciphertext_name_exist(ciphertext_name);
         this->evaluator->mod_switch_to_inplace(
-            get_ciphertext(ciphertext_name),
-            convert_parms_vector_to_array(parms_id)
+                get_ciphertext(ciphertext_name),
+                convert_parms_vector_to_array(parms_id)
         );
     }
 
     void Wrapper::evaluator_mod_switch_to_inplace_plaintext(string plaintext_name, vector<long unsigned int> parms_id) {
         check_plaintext_name_exist(plaintext_name);
         this->evaluator->mod_switch_to_inplace(
-            get_plaintext(plaintext_name),
-            convert_parms_vector_to_array(parms_id)
+                get_plaintext(plaintext_name),
+                convert_parms_vector_to_array(parms_id)
         );
     }
 
@@ -521,12 +495,11 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
     /* Private Methods */
     // logging
     void Wrapper::print_info() {
-        #ifdef SEAL_VERSION
+#ifdef SEAL_VERSION
         cout << "Microsoft SEAL version: " << SEAL_VERSION << endl;
-        #endif
+#endif
         // Verify parameters
-        if (!this->context)
-        {
+        if (!this->context) {
             throw invalid_argument("context is not set");
         }
         auto &context_data = *(this->context)->context_data();
@@ -534,38 +507,36 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         Which scheme are we using?
         */
         string scheme_name;
-        switch (context_data.parms().scheme())
-        {
-        case scheme_type::BFV:
-            scheme_name = "BFV";
-            break;
-        case scheme_type::CKKS:
-            scheme_name = "CKKS";
-            break;
-        default:
-            throw invalid_argument("unsupported scheme");
+        switch (context_data.parms().scheme()) {
+            case scheme_type::BFV:
+                scheme_name = "BFV";
+                break;
+            case scheme_type::CKKS:
+                scheme_name = "CKKS";
+                break;
+            default:
+                throw invalid_argument("unsupported scheme");
         }
         cout << "/ Encryption parameters:" << endl;
         cout << "| scheme: " << scheme_name << endl;
         cout << "| poly_modulus_degree: " <<
-            context_data.parms().poly_modulus_degree() << endl;
+             context_data.parms().poly_modulus_degree() << endl;
         /*
         Print the size of the true (product) coefficient modulus.
         */
         cout << "| coeff_modulus size: " << context_data.
-            total_coeff_modulus_bit_count() << " bits" << endl;
+                total_coeff_modulus_bit_count() << " bits" << endl;
         /*
         For the BFV scheme print the plain_modulus parameter.
         */
-        if (context_data.parms().scheme() == scheme_type::BFV)
-        {
+        if (context_data.parms().scheme() == scheme_type::BFV) {
             cout << "| plain_modulus: " << context_data.
-                parms().plain_modulus().value() << endl;
+                    parms().plain_modulus().value() << endl;
         }
         cout << "| noise_standard_deviation: " << context_data.
-            parms().noise_standard_deviation() << endl;
+                parms().noise_standard_deviation() << endl;
         cout << "\\Total memory allocated from the current memory pool: "
-            << (MemoryManager::GetPool().alloc_byte_count() >> 20) << " MB" << endl;
+             << (MemoryManager::GetPool().alloc_byte_count() >> 20) << " MB" << endl;
         cout << endl;
     }
 
@@ -578,7 +549,7 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         }
     }
 
-    void Wrapper::check_ciphertext_name_exist(string ciphertext_name){
+    void Wrapper::check_ciphertext_name_exist(string ciphertext_name) {
         auto search_result = this->ciphertext_map.find(ciphertext_name);
         if (search_result == this->ciphertext_map.end()) {
             std::stringstream msg;
@@ -587,7 +558,7 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         }
     }
 
-    void Wrapper::check_plaintext_name_not_exist(string plaintext_name){
+    void Wrapper::check_plaintext_name_not_exist(string plaintext_name) {
         auto search_result = this->plaintext_map.find(plaintext_name);
         if (search_result != this->plaintext_map.end()) {
             std::stringstream msg;
@@ -596,7 +567,7 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         }
     }
 
-    void Wrapper::check_ciphertext_name_not_exist(string ciphertext_name){
+    void Wrapper::check_ciphertext_name_not_exist(string ciphertext_name) {
         auto search_result = this->ciphertext_map.find(ciphertext_name);
         if (search_result != this->ciphertext_map.end()) {
             std::stringstream msg;
@@ -605,12 +576,12 @@ Noise budget in a freshly made ciphertext = log2(coeff_modulus/plain_modulus) (b
         }
     }
 
-    Plaintext& Wrapper::get_plaintext(string plaintext_name) {
+    Plaintext &Wrapper::get_plaintext(string plaintext_name) {
         check_plaintext_name_exist(plaintext_name);
         return plaintext_map[plaintext_name];
     }
 
-    Ciphertext& Wrapper::get_ciphertext(string ciphertext_name) {
+    Ciphertext &Wrapper::get_ciphertext(string ciphertext_name) {
         check_ciphertext_name_exist(ciphertext_name);
         return this->ciphertext_map[ciphertext_name];
     }

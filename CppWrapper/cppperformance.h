@@ -8,14 +8,16 @@ using namespace seal;
 
 namespace performance {
     class Performance {
-        public:
-            /* Constructor & Destructor */
-            Performance();
-            ~Performance();
+    public:
+        /* Constructor & Destructor */
+        Performance();
 
-            /* Methods */
-            void run_bfv_performance_test();
-            void run_ckks_performance_test();
+        ~Performance();
+
+        /* Methods */
+        void run_bfv_performance_test();
+
+        void run_ckks_performance_test();
     };
 }
 

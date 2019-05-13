@@ -21,11 +21,9 @@ using namespace seal;
 /*
 Helper function: Prints the parameters in a SEALContext.
 */
-void print_parameters(shared_ptr<SEALContext> context)
-{
+void print_parameters(shared_ptr <SEALContext> context) {
     // Verify parameters
-    if (!context)
-    {
+    if (!context) {
         throw invalid_argument("context is not set");
     }
     auto &context_data = *context->context_data();
@@ -34,40 +32,38 @@ void print_parameters(shared_ptr<SEALContext> context)
     Which scheme are we using?
     */
     string scheme_name;
-    switch (context_data.parms().scheme())
-    {
-    case scheme_type::BFV:
-        scheme_name = "BFV";
-        break;
-    case scheme_type::CKKS:
-        scheme_name = "CKKS";
-        break;
-    default:
-        throw invalid_argument("unsupported scheme");
+    switch (context_data.parms().scheme()) {
+        case scheme_type::BFV:
+            scheme_name = "BFV";
+            break;
+        case scheme_type::CKKS:
+            scheme_name = "CKKS";
+            break;
+        default:
+            throw invalid_argument("unsupported scheme");
     }
 
     cout << "/ Encryption parameters:" << endl;
     cout << "| scheme: " << scheme_name << endl;
     cout << "| poly_modulus_degree: " <<
-        context_data.parms().poly_modulus_degree() << endl;
+         context_data.parms().poly_modulus_degree() << endl;
 
     /*
     Print the size of the true (product) coefficient modulus.
     */
     cout << "| coeff_modulus size: " << context_data.
-        total_coeff_modulus_bit_count() << " bits" << endl;
+            total_coeff_modulus_bit_count() << " bits" << endl;
 
     /*
     For the BFV scheme print the plain_modulus parameter.
     */
-    if (context_data.parms().scheme() == scheme_type::BFV)
-    {
+    if (context_data.parms().scheme() == scheme_type::BFV) {
         cout << "| plain_modulus: " << context_data.
-            parms().plain_modulus().value() << endl;
+                parms().plain_modulus().value() << endl;
     }
 
     cout << "\\ noise_standard_deviation: " << context_data.
-        parms().noise_standard_deviation() << endl;
+            parms().noise_standard_deviation() << endl;
     cout << endl;
 }
 
@@ -75,9 +71,9 @@ void print_parameters(shared_ptr<SEALContext> context)
 namespace performance {
 
     /* Constructor & Destructor */
-    Performance::Performance () {}
+    Performance::Performance() {}
 
-    Performance::~Performance () {}
+    Performance::~Performance() {}
 
     /* Methods */
     void Performance::run_bfv_performance_test() {
@@ -86,8 +82,7 @@ namespace performance {
         In this example we time all the basic operations. We use the following
         lambda function to run the test.
         */
-        auto performance_test = [](auto context)
-        {
+        auto performance_test = [](auto context) {
             chrono::high_resolution_clock::time_point time_start, time_end;
 
             print_parameters(context);
@@ -125,8 +120,7 @@ namespace performance {
             allocation size. The key generation can also take a significant amount
             of time, as can be observed from the print-out.
             */
-            if (!context->context_data()->qualifiers().using_batching)
-            {
+            if (!context->context_data()->qualifiers().using_batching) {
                 cout << "Given encryption parameters do not support batching." << endl;
                 return;
             }
@@ -167,16 +161,14 @@ namespace performance {
             /*
             Populate a vector of values to batch.
             */
-            vector<uint64_t> pod_vector;
+            vector <uint64_t> pod_vector;
             random_device rd;
-            for (size_t i = 0; i < batch_encoder.slot_count(); i++)
-            {
+            for (size_t i = 0; i < batch_encoder.slot_count(); i++) {
                 pod_vector.push_back(rd() % plain_modulus.value());
             }
 
             cout << "Running tests ";
-            for (int i = 0; i < count; i++)
-            {
+            for (int i = 0; i < count; i++) {
                 /*
                 [Batching]
                 There is nothing unusual here. We batch our random plaintext matrix
@@ -190,20 +182,19 @@ namespace performance {
                 batch_encoder.encode(pod_vector, plain);
                 time_end = chrono::high_resolution_clock::now();
                 time_batch_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Unbatching]
                 We unbatch what we just batched.
                 */
-                vector<uint64_t> pod_vector2(batch_encoder.slot_count());
+                vector <uint64_t> pod_vector2(batch_encoder.slot_count());
                 time_start = chrono::high_resolution_clock::now();
                 batch_encoder.decode(plain, pod_vector2);
                 time_end = chrono::high_resolution_clock::now();
                 time_unbatch_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
-                if (pod_vector2 != pod_vector)
-                {
+                        chrono::microseconds>(time_end - time_start);
+                if (pod_vector2 != pod_vector) {
                     throw runtime_error("Batch/unbatch failed. Something is wrong.");
                 }
 
@@ -218,7 +209,7 @@ namespace performance {
                 encryptor.encrypt(plain, encrypted);
                 time_end = chrono::high_resolution_clock::now();
                 time_encrypt_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Decryption]
@@ -229,9 +220,8 @@ namespace performance {
                 decryptor.decrypt(encrypted, plain2);
                 time_end = chrono::high_resolution_clock::now();
                 time_decrypt_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
-                if (plain2 != plain)
-                {
+                        chrono::microseconds>(time_end - time_start);
+                if (plain2 != plain) {
                     throw runtime_error("Encrypt/decrypt failed. Something is wrong.");
                 }
 
@@ -250,7 +240,7 @@ namespace performance {
                 evaluator.add_inplace(encrypted1, encrypted2);
                 time_end = chrono::high_resolution_clock::now();
                 time_add_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start) / 3;
+                        chrono::microseconds>(time_end - time_start) / 3;
 
                 /*
                 [Multiply]
@@ -263,7 +253,7 @@ namespace performance {
                 evaluator.multiply_inplace(encrypted1, encrypted2);
                 time_end = chrono::high_resolution_clock::now();
                 time_multiply_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Multiply Plain]
@@ -275,7 +265,7 @@ namespace performance {
                 evaluator.multiply_plain_inplace(encrypted2, plain);
                 time_end = chrono::high_resolution_clock::now();
                 time_multiply_plain_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Square]
@@ -286,7 +276,7 @@ namespace performance {
                 evaluator.square_inplace(encrypted2);
                 time_end = chrono::high_resolution_clock::now();
                 time_square_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Relinearize]
@@ -299,7 +289,7 @@ namespace performance {
                 evaluator.relinearize_inplace(encrypted1, relin_keys);
                 time_end = chrono::high_resolution_clock::now();
                 time_relinearize_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Rotate Rows One Step]
@@ -310,7 +300,7 @@ namespace performance {
                 evaluator.rotate_rows_inplace(encrypted, -1, gal_keys);
                 time_end = chrono::high_resolution_clock::now();
                 time_rotate_rows_one_step_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start) / 2;
+                        chrono::microseconds>(time_end - time_start) / 2;
 
                 /*
                 [Rotate Rows Random]
@@ -323,7 +313,7 @@ namespace performance {
                 evaluator.rotate_rows_inplace(encrypted, random_rotation, gal_keys);
                 time_end = chrono::high_resolution_clock::now();
                 time_rotate_rows_random_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Rotate Columns]
@@ -333,7 +323,7 @@ namespace performance {
                 evaluator.rotate_columns_inplace(encrypted, gal_keys);
                 time_end = chrono::high_resolution_clock::now();
                 time_rotate_columns_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 Print a dot to indicate progress.
@@ -408,8 +398,7 @@ namespace performance {
         lambda function to run the test. This is largely similar to the function
         in the previous example.
         */
-        auto performance_test = [](auto context)
-        {
+        auto performance_test = [](auto context) {
             chrono::high_resolution_clock::time_point time_start, time_end;
 
             print_parameters(context);
@@ -431,8 +420,7 @@ namespace performance {
             auto time_diff = chrono::duration_cast<chrono::microseconds>(time_end - time_start);
             cout << "Done [" << time_diff.count() << " microseconds]" << endl;
 
-            if (!context->context_data()->qualifiers().using_batching)
-            {
+            if (!context->context_data()->qualifiers().using_batching) {
                 cout << "Given encryption parameters do not support batching." << endl;
                 return;
             }
@@ -472,25 +460,23 @@ namespace performance {
             */
             vector<double> pod_vector;
             random_device rd;
-            for (size_t i = 0; i < ckks_encoder.slot_count(); i++)
-            {
+            for (size_t i = 0; i < ckks_encoder.slot_count(); i++) {
                 pod_vector.push_back(1.001 * static_cast<double>(i));
             }
 
             cout << "Running tests ";
-            for (int i = 0; i < count; i++)
-            {
+            for (int i = 0; i < count; i++) {
                 /*
                 [Encoding]
                 */
                 Plaintext plain(curr_parms.poly_modulus_degree() *
-                    curr_parms.coeff_modulus().size(), 0);
+                                curr_parms.coeff_modulus().size(), 0);
                 time_start = chrono::high_resolution_clock::now();
                 ckks_encoder.encode(pod_vector,
-                    static_cast<double>(curr_parms.coeff_modulus().back().value()), plain);
+                                    static_cast<double>(curr_parms.coeff_modulus().back().value()), plain);
                 time_end = chrono::high_resolution_clock::now();
                 time_encode_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Decoding]
@@ -500,7 +486,7 @@ namespace performance {
                 ckks_encoder.decode(plain, pod_vector2);
                 time_end = chrono::high_resolution_clock::now();
                 time_decode_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Encryption]
@@ -510,7 +496,7 @@ namespace performance {
                 encryptor.encrypt(plain, encrypted);
                 time_end = chrono::high_resolution_clock::now();
                 time_encrypt_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Decryption]
@@ -520,7 +506,7 @@ namespace performance {
                 decryptor.decrypt(encrypted, plain2);
                 time_end = chrono::high_resolution_clock::now();
                 time_decrypt_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Add]
@@ -537,7 +523,7 @@ namespace performance {
                 evaluator.add_inplace(encrypted1, encrypted2);
                 time_end = chrono::high_resolution_clock::now();
                 time_add_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start) / 3;
+                        chrono::microseconds>(time_end - time_start) / 3;
 
                 /*
                 [Multiply]
@@ -547,7 +533,7 @@ namespace performance {
                 evaluator.multiply_inplace(encrypted1, encrypted2);
                 time_end = chrono::high_resolution_clock::now();
                 time_multiply_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Multiply Plain]
@@ -556,7 +542,7 @@ namespace performance {
                 evaluator.multiply_plain_inplace(encrypted2, plain);
                 time_end = chrono::high_resolution_clock::now();
                 time_multiply_plain_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Square]
@@ -565,7 +551,7 @@ namespace performance {
                 evaluator.square_inplace(encrypted2);
                 time_end = chrono::high_resolution_clock::now();
                 time_square_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Relinearize]
@@ -574,7 +560,7 @@ namespace performance {
                 evaluator.relinearize_inplace(encrypted1, relin_keys);
                 time_end = chrono::high_resolution_clock::now();
                 time_relinearize_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Rescale]
@@ -583,7 +569,7 @@ namespace performance {
                 evaluator.rescale_to_next_inplace(encrypted1);
                 time_end = chrono::high_resolution_clock::now();
                 time_rescale_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Rotate Vector]
@@ -593,7 +579,7 @@ namespace performance {
                 evaluator.rotate_vector_inplace(encrypted, -1, gal_keys);
                 time_end = chrono::high_resolution_clock::now();
                 time_rotate_one_step_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start) / 2;
+                        chrono::microseconds>(time_end - time_start) / 2;
 
                 /*
                 [Rotate Vector Random]
@@ -603,7 +589,7 @@ namespace performance {
                 evaluator.rotate_vector_inplace(encrypted, random_rotation, gal_keys);
                 time_end = chrono::high_resolution_clock::now();
                 time_rotate_random_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 [Complex Conjugate]
@@ -612,7 +598,7 @@ namespace performance {
                 evaluator.complex_conjugate_inplace(encrypted, gal_keys);
                 time_end = chrono::high_resolution_clock::now();
                 time_conjugate_sum += chrono::duration_cast<
-                    chrono::microseconds>(time_end - time_start);
+                        chrono::microseconds>(time_end - time_start);
 
                 /*
                 Print a dot to indicate progress.
